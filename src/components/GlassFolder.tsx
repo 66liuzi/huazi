@@ -77,33 +77,66 @@ export default function GlassFolder({ label, color1, color2, cards, isExpanded, 
   );
 }
 
+const DRAG_THRESHOLD = 5; // px — any move beyond this = drag, not click
+
 function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: string; color2: string; cards: CardData[]; onCardClick?: (card: CardData) => void; label: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<number | null>(null);
+  const [isGrabbing, setIsGrabbing] = useState(false);
   const isResetting = useRef(false);
   const lastResetTime = useRef(0);
   const CW = 200; const GAP = 16; const CARD_STEP = CW + GAP;
   const cardCount = cards.length;
   const TRIPLE = useMemo(() => [...cards, ...cards, ...cards, ...cards, ...cards], [cards]);
 
+  // ── Drag state (ref so closures always see current values) ──
+  const drag = useRef({
+    active: false,
+    didDrag: false,
+    startX: 0,
+    startScrollLeft: 0,
+    velX: 0,
+    lastX: 0,
+    lastTime: 0,
+  });
+  const momentumRaf = useRef(0);
+
   const doReset = useCallback((el: HTMLDivElement, offset: number) => {
     const now = performance.now();
-    if (now - lastResetTime.current < 100) return; // debounce: max 1 reset per 100ms
+    if (now - lastResetTime.current < 100) return;
     lastResetTime.current = now;
     isResetting.current = true;
     el.scrollLeft += offset;
-    // Use RAF to defer flag clear, ensuring pending scroll events see the flag
+    // Also update the drag reference so position stays consistent if dragging
+    drag.current.startScrollLeft += offset;
     requestAnimationFrame(() => { requestAnimationFrame(() => { isResetting.current = false; }); });
   }, []);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft = (TRIPLE.length * CARD_STEP) / 2;
-    }
-  }, [TRIPLE.length, CARD_STEP]);
+  // ── Momentum / inertia scrolling ──
+  const stopMomentum = useCallback(() => {
+    if (momentumRaf.current) { cancelAnimationFrame(momentumRaf.current); momentumRaf.current = 0; }
+  }, []);
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
+  const startMomentum = useCallback(() => {
+    stopMomentum();
+    const friction = 0.94;
+    const minVel = 0.3;
+    const animate = () => {
+      const el = scrollRef.current;
+      if (!el || Math.abs(drag.current.velX) < minVel) {
+        momentumRaf.current = 0;
+        if (el) checkBoundaries(el);
+        return;
+      }
+      drag.current.velX *= friction;
+      el.scrollLeft -= drag.current.velX;
+      checkBoundaries(el);
+      momentumRaf.current = requestAnimationFrame(animate);
+    };
+    momentumRaf.current = requestAnimationFrame(animate);
+  }, [stopMomentum]);
+
+  const checkBoundaries = useCallback((el: HTMLDivElement) => {
     if (!el || isResetting.current) return;
     const maxScroll = el.scrollWidth - el.clientWidth;
     const threshold = CARD_STEP * cardCount;
@@ -114,11 +147,149 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
     }
   }, [cardCount, CARD_STEP, doReset]);
 
-  const scrollByAmount = useCallback((dir: 1 | -1) => {
+  // ── Mouse drag handlers ──
+  const onContainerMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only left button
+    if (e.button !== 0) return;
     const el = scrollRef.current;
     if (!el) return;
 
-    // Check if we're near a boundary and need to reset before scrolling
+    stopMomentum();
+    drag.current = {
+      active: true,
+      didDrag: false,
+      startX: e.clientX,
+      startScrollLeft: el.scrollLeft,
+      velX: 0,
+      lastX: e.clientX,
+      lastTime: performance.now(),
+    };
+    setIsGrabbing(true);
+
+    document.addEventListener('mousemove', onDocumentMouseMove);
+    document.addEventListener('mouseup', onDocumentMouseUp);
+  }, [stopMomentum]);
+
+  const onDocumentMouseMove = useCallback((e: MouseEvent) => {
+    const d = drag.current;
+    const dx = e.clientX - d.startX;
+
+    if (!d.didDrag && Math.abs(dx) > DRAG_THRESHOLD) {
+      d.didDrag = true;
+      // Prevent text selection once we know it's a drag
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'grabbing';
+    }
+
+    if (d.didDrag && scrollRef.current) {
+      const now = performance.now();
+      const dt = Math.max(now - d.lastTime, 1);
+      d.velX = (e.clientX - d.lastX) / dt * 16; // normalised to ~60 fps
+      d.lastX = e.clientX;
+      d.lastTime = now;
+      scrollRef.current.scrollLeft = d.startScrollLeft - dx;
+    }
+  }, []);
+
+  const onDocumentMouseUp = useCallback(() => {
+    document.removeEventListener('mousemove', onDocumentMouseMove);
+    document.removeEventListener('mouseup', onDocumentMouseUp);
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+
+    const wasDrag = drag.current.didDrag;
+    drag.current.active = false;
+    setIsGrabbing(false);
+
+    if (wasDrag) {
+      startMomentum();
+    }
+  }, [onDocumentMouseMove, startMomentum]);
+
+  // ── Touch drag handlers (mobile) ──
+  const onContainerTouchStart = useCallback((e: React.TouchEvent) => {
+    const el = scrollRef.current;
+    if (!el || e.touches.length !== 1) return;
+    stopMomentum();
+
+    const t = e.touches[0];
+    drag.current = {
+      active: true,
+      didDrag: false,
+      startX: t.clientX,
+      startScrollLeft: el.scrollLeft,
+      velX: 0,
+      lastX: t.clientX,
+      lastTime: performance.now(),
+    };
+  }, [stopMomentum]);
+
+  const onContainerTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const d = drag.current;
+    const t = e.touches[0];
+    const dx = t.clientX - d.startX;
+
+    if (!d.didDrag && Math.abs(dx) > DRAG_THRESHOLD) {
+      d.didDrag = true;
+    }
+
+    if (d.didDrag && scrollRef.current) {
+      const now = performance.now();
+      const dt = Math.max(now - d.lastTime, 1);
+      d.velX = (t.clientX - d.lastX) / dt * 16;
+      d.lastX = t.clientX;
+      d.lastTime = now;
+      scrollRef.current.scrollLeft = d.startScrollLeft - dx;
+    }
+  }, []);
+
+  const onContainerTouchEnd = useCallback(() => {
+    const wasDrag = drag.current.didDrag;
+    drag.current.active = false;
+
+    if (wasDrag) {
+      startMomentum();
+    }
+  }, [startMomentum]);
+
+  // ── Card click: only fire when NOT a drag ──
+  const handleCardClick = useCallback((card: CardData) => (e: React.MouseEvent) => {
+    // If a drag just happened, swallow the click
+    if (drag.current.didDrag) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Reset didDrag after a short delay so subsequent clicks work
+      setTimeout(() => { drag.current.didDrag = false; }, 0);
+      return;
+    }
+    const original = cards.find(x => x.id === card.id);
+    if (original) onCardClick?.(original);
+  }, [cards, onCardClick]);
+
+  // ── Cleanup ──
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', onDocumentMouseMove);
+      document.removeEventListener('mouseup', onDocumentMouseUp);
+      stopMomentum();
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [onDocumentMouseMove, onDocumentMouseUp, stopMomentum]);
+
+  // ── Initial scroll position ──
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = (TRIPLE.length * CARD_STEP) / 2;
+    }
+  }, [TRIPLE.length, CARD_STEP]);
+
+  // Arrow button scroll
+  const scrollByAmount = useCallback((dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    stopMomentum();
     const maxScroll = el.scrollWidth - el.clientWidth;
     const threshold = CARD_STEP * cardCount;
     if (dir === 1 && el.scrollLeft > maxScroll - threshold * 2) {
@@ -126,39 +297,146 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
     } else if (dir === -1 && el.scrollLeft < threshold * 2) {
       doReset(el, CARD_STEP * cardCount * 2);
     }
-
     el.scrollBy({ left: dir * CARD_STEP, behavior: 'smooth' });
-  }, [cardCount, CARD_STEP, doReset]);
+  }, [cardCount, CARD_STEP, doReset, stopMomentum]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }} className="w-full">
       <div className="relative w-full rounded-3xl overflow-hidden"
         style={{ background: `linear-gradient(135deg,rgba(20,20,30,0.92),rgba(15,15,25,0.92))`, border:`1px solid ${color1}20`, boxShadow:`0 0 120px ${color1}10` }}>
-        <div className="absolute top-0 left-0 right-0 z-20 px-6 md:px-8 py-5 pointer-events-none"><span className="text-sm md:text-base font-medium tracking-[0.2em] uppercase" style={{color:color1}}>{label}</span></div>
-        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(-1)}} className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/8 transition-colors" style={{background:'rgba(255,255,255,0.05)'}}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7"/></svg></button>
-        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(1)}} className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/8 transition-colors" style={{background:'rgba(255,255,255,0.05)'}}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7"/></svg></button>
-        <div ref={scrollRef} onScroll={handleScroll}
+        {/* Title bar */}
+        <div className="absolute top-0 left-0 right-0 z-20 px-6 md:px-8 py-5 pointer-events-none">
+          <span className="text-sm md:text-base font-medium tracking-[0.2em] uppercase" style={{color:color1}}>{label}</span>
+        </div>
+
+        {/* Left / Right arrow buttons */}
+        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(-1)}} className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/8 transition-colors" style={{background:'rgba(255,255,255,0.05)'}}>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(1)}} className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/8 transition-colors" style={{background:'rgba(255,255,255,0.05)'}}>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7"/></svg>
+        </button>
+
+        {/* Scrollable card track */}
+        <div
+          ref={scrollRef}
+          onMouseDown={onContainerMouseDown}
+          onTouchStart={onContainerTouchStart}
+          onTouchMove={onContainerTouchMove}
+          onTouchEnd={onContainerTouchEnd}
           className="flex items-center gap-4 py-10 md:py-14 px-[8%] overflow-x-auto scrollbar-hide"
-          style={{ scrollSnapType:'x mandatory', WebkitOverflowScrolling:'touch' }}>
-          {TRIPLE.map((c,i)=>{
-            const id=c.id*1000+i; const a=active===id; const d=active!==null&&!a;
-            return (<div key={id} onMouseEnter={()=>setActive(id)} onMouseLeave={()=>setActive(null)}
-              onClick={()=>{const o=cards.find(x=>x.id===c.id);if(o)onCardClick?.(o)}}
-              className="flex-shrink-0 rounded-2xl border overflow-hidden cursor-pointer transition-all duration-200 snap-center"
-              style={{width:CW,maxWidth:'55vw',aspectRatio:'3/4',background:'#1a1a1a',borderColor:a?`${color1}40`:`${color1}10`,opacity:d?0.7:1,transform:a?'scale(1.06)':d?'scale(0.96)':'scale(1)',position:'relative'}}>
-              {c.poster ? <img src={c.poster} className="absolute inset-0 w-full h-full object-cover" alt={c.title} style={{zIndex:0}} /> : <div className="absolute inset-0" style={{background:`linear-gradient(135deg,${c.gradient},#0a0a0f)`,zIndex:0}}/>}
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-3" style={{zIndex:2}}>
-                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center mb-3"><svg className="w-5 h-5 text-white/60 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5.14v14l11-7-11-7z"/></svg></div>
-                <span className="text-white/50 text-xs font-medium tracking-wider">{String(c.id).padStart(2,'0')}</span>
-                <span className="text-white/70 text-[10px] mt-1 text-center leading-tight px-1" style={{opacity:a?1:0,transition:'opacity 0.1s'}}>{c.title}</span>
+          style={{
+            scrollSnapType: 'x mandatory',
+            WebkitOverflowScrolling: 'touch',
+            cursor: isGrabbing ? 'grabbing' : 'grab',
+            userSelect: 'none',
+            touchAction: 'pan-y',
+          }}
+        >
+          {TRIPLE.map((c, i) => {
+            const id = c.id * 1000 + i;
+            const a = active === id;
+            const d = active !== null && !a;
+            return (
+              <div
+                key={id}
+                onMouseEnter={() => setActive(id)}
+                onMouseLeave={() => setActive(null)}
+                onClick={handleCardClick(c)}
+                className="flex-shrink-0 rounded-2xl border overflow-hidden transition-all duration-200 snap-center group"
+                style={{
+                  width: CW,
+                  maxWidth: '55vw',
+                  aspectRatio: '3/4',
+                  background: '#1a1a1a',
+                  borderColor: a ? `${color1}40` : `${color1}10`,
+                  opacity: d ? 0.7 : 1,
+                  transform: a ? 'scale(1.06)' : d ? 'scale(0.96)' : 'scale(1)',
+                  position: 'relative',
+                  cursor: 'pointer',
+                }}
+              >
+                {/* Poster / gradient background */}
+                {c.poster ? (
+                  <img src={c.poster} className="absolute inset-0 w-full h-full object-cover" alt={c.title} style={{ zIndex: 0 }} loading="lazy" />
+                ) : (
+                  <div className="absolute inset-0" style={{ background: `linear-gradient(135deg,${c.gradient},#0a0a0f)`, zIndex: 0 }} />
+                )}
+
+                {/* Dark gradient overlay for readability */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.05) 70%, transparent 100%)',
+                    zIndex: 1,
+                  }}
+                />
+
+                {/* Play button overlay */}
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  style={{ zIndex: 2 }}
+                >
+                  <div
+                    className="flex items-center justify-center rounded-full transition-all duration-300"
+                    style={{
+                      width: '52px',
+                      height: '52px',
+                      background: 'rgba(255,255,255,0.12)',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      boxShadow: a
+                        ? `0 0 30px ${color1}30, 0 0 8px rgba(255,255,255,0.15)`
+                        : '0 4px 16px rgba(0,0,0,0.3)',
+                      transform: a ? 'scale(1.1)' : 'scale(1)',
+                    }}
+                  >
+                    <svg
+                      className="text-white"
+                      style={{ width: '20px', height: '20px', marginLeft: '3px', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5.14v14l11-7-11-7z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Card info (bottom) */}
+                <div className="absolute bottom-0 left-0 right-0 p-3 pointer-events-none" style={{ zIndex: 3 }}>
+                  <span className="block text-white/60 text-[11px] font-medium tracking-wider">{String(c.id).padStart(2, '0')}</span>
+                  <span
+                    className="block text-white/80 text-xs mt-0.5 leading-tight"
+                    style={{ opacity: a ? 1 : 0.6, transition: 'opacity 0.2s' }}
+                  >
+                    {c.title}
+                  </span>
+                </div>
+
+                {/* Hover highlight border ring */}
+                <div
+                  className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300"
+                  style={{
+                    zIndex: 4,
+                    opacity: a ? 1 : 0,
+                    boxShadow: `inset 0 0 0 2px ${color1}50, 0 0 20px ${color1}10`,
+                  }}
+                />
               </div>
-              <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none" style={{background:'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',zIndex:1}}/>
-            </div>);
+            );
           })}
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{background:`linear-gradient(transparent,rgba(15,15,25,0.8))`}}/>
+
+        {/* Bottom fade gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{ background: `linear-gradient(transparent,rgba(15,15,25,0.8))` }} />
       </div>
-      <div className="text-center mt-4"><span className="text-xs tracking-wider uppercase" style={{color:`${color1}70`}}>{cards.length} works · Infinite scroll · Click to preview</span></div>
+
+      <div className="text-center mt-4">
+        <span className="text-xs tracking-wider uppercase" style={{ color: `${color1}70` }}>
+          {cards.length} works · Drag or click · Preview on tap
+        </span>
+      </div>
     </motion.div>
   );
 }
