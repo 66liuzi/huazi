@@ -333,10 +333,12 @@ const Prism = ({
       let continueRAF = true;
 
       if (animationType === 'hover') {
-        // Autonomous base rotation (always active, even when mouse is idle)
-        const autoYaw = Math.sin(time * 0.28) * 0.15;
-        const autoPitch = Math.cos(time * 0.35 + 1.5) * 0.1;
-        const autoRoll = Math.sin(time * 0.22 + 2.8) * 0.06;
+        // Autonomous base rotation — vertical (pitch) dominant with multi-octave random motion
+        const autoYaw   = Math.sin(time * 0.28) * 0.08;
+        const autoPitch = Math.sin(time * 0.42 + 1.1) * 0.25
+                        + Math.cos(time * 0.73 + 3.4) * 0.15
+                        + Math.sin(time * 0.31 + 5.2) * 0.10;
+        const autoRoll  = Math.sin(time * 0.22 + 2.8) * 0.08;
 
         const maxPitch = 0.6 * HOVSTR;
         const maxYaw = 0.6 * HOVSTR;

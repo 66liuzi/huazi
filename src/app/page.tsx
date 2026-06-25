@@ -58,11 +58,11 @@ export default function Home() {
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'radial-gradient(ellipse at center, transparent 40%, rgba(9,9,9,0.5) 100%)',
-            zIndex: 1,
+            background: 'radial-gradient(ellipse at center, transparent 35%, rgba(9,9,9,0.5) 100%)',
+            zIndex: 10,
           }}
         />
-        <div className="relative z-10">
+        <div className="relative z-[5]">
           <HeroText />
         </div>
       </section>

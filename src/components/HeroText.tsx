@@ -38,8 +38,8 @@ export default function HeroText() {
         style={{
           color: '#ffffff',
           mixBlendMode: 'difference' as React.CSSProperties['mixBlendMode'],
-          WebkitTextStroke: '0.5px rgba(128,128,128,0.4)',
-          filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.5)) brightness(1.15)',
+          WebkitTextStroke: '0.6px rgba(255,255,255,0.25)',
+          textShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 25px rgba(255,255,255,0.2)',
         }}
       >
         HELLO
@@ -53,8 +53,8 @@ export default function HeroText() {
           style={{
             color: '#ffffff',
             mixBlendMode: 'difference' as React.CSSProperties['mixBlendMode'],
-            WebkitTextStroke: '0.75px rgba(128,128,128,0.35)',
-            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45)) brightness(1.15)',
+            WebkitTextStroke: '0.8px rgba(255,255,255,0.2)',
+            textShadow: '0 0 12px rgba(255,255,255,0.35), 0 0 30px rgba(255,255,255,0.15)',
           }}
         >
           刘洋华子
