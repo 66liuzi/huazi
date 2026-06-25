@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import HeroText from '@/components/HeroText';
-import Navbar from '@/components/Navbar';
 import { HeroSkeleton, PortfolioSkeleton } from '@/components/LoadingSkeleton';
 
 const COS_VIDEO_BASE = 'https://huazi-1324532363.cos.ap-beijing.myqcloud.com/media/videos';
@@ -49,7 +48,6 @@ export default function Home() {
 
   return (
     <main className="relative overflow-hidden">
-      <Navbar />
       <MouseGlow />
 
       {/* Hero Section */}

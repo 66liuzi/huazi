@@ -7,7 +7,7 @@ gsap.registerPlugin(ScrollTrigger);
 /**
  * Smooth scroll to target element using GSAP (no ScrollToPlugin needed)
  */
-export function smoothScrollTo(target: string | HTMLElement, duration = 1.2) {
+export function smoothScrollTo(target: string | HTMLElement, duration = 0.6) {
   const el = typeof target === 'string' ? document.querySelector(target) as HTMLElement : target;
   if (!el) return;
 
@@ -17,7 +17,7 @@ export function smoothScrollTo(target: string | HTMLElement, duration = 1.2) {
   gsap.to(proxy, {
     y: targetY,
     duration,
-    ease: 'power3.inOut',
+    ease: 'power2.inOut',
     onUpdate: () => window.scrollTo(0, proxy.y),
   });
 }

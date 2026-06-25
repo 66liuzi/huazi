@@ -41,7 +41,7 @@ export default function HeroText() {
 
       <motion.h1
         variants={item}
-        className="text-6xl md:text-8xl lg:text-9xl font-medium tracking-tight mb-6 -translate-y-6 font-[family-name:var(--font-cinzel)]"
+        className="text-6xl md:text-8xl lg:text-9xl font-thin tracking-[0.02em] mb-6 -translate-y-6 font-[family-name:var(--font-cinzel)]"
       >
         <span className="bg-gradient-to-br from-white via-cyan-100 to-blue-200 bg-clip-text text-transparent">
           刘洋华子
@@ -65,20 +65,20 @@ export default function HeroText() {
       <motion.div variants={item} className="mt-10 pt-6">
         <button
           onClick={scrollToPortfolio}
-          className="relative inline-flex items-center justify-center gap-6 px-72 py-14 rounded-full
-                     text-white font-semibold text-lg tracking-[0.2em]
+          className="relative inline-flex items-center justify-center gap-4 px-10 py-4
+                     text-white font-light text-base tracking-[0.15em]
                      transition-all duration-500 hover:scale-105
-                     border-2 border-white/20 hover:border-cyan-400/60
-                     shadow-[0_0_50px_rgba(34,211,238,0.15)] hover:shadow-[0_0_80px_rgba(34,211,238,0.35)]"
+                     border border-white/15 hover:border-cyan-400/50 rounded-full
+                     shadow-[0_0_40px_rgba(34,211,238,0.1)] hover:shadow-[0_0_60px_rgba(34,211,238,0.25)]"
           style={{
-            background: 'rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.05)',
             backdropFilter: 'blur(80px)',
             WebkitBackdropFilter: 'blur(80px)',
           }}
         >
-          <span className="whitespace-nowrap" style={{marginLeft: '55px'}}>查看作品集</span>
-          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+          <span>查看作品集</span>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
           </svg>
         </button>
       </motion.div>
