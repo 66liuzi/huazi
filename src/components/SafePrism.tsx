@@ -44,8 +44,8 @@ export default function SafePrism() {
         height={3.5}
         baseWidth={5.5}
         scale={3.2}
-        hueShift={0.8}
-        colorFrequency={1.2}
+        hueShift={0.15}
+        colorFrequency={2.8}
         noise={0.03}
         glow={1.5}
         bloom={1.3}
