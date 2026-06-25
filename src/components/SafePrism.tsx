@@ -40,15 +40,15 @@ export default function SafePrism() {
     <ErrorBoundary fallback={<PrismFallback />}>
       <Prism
         animationType="hover"
-        timeScale={0.4}
+        timeScale={0.55}
         height={3.5}
         baseWidth={5.5}
-        scale={3.0}
+        scale={3.2}
         hueShift={0.8}
         colorFrequency={1.2}
-        noise={0}
-        glow={1.2}
-        bloom={1.0}
+        noise={0.03}
+        glow={1.5}
+        bloom={1.3}
         hoverStrength={2.5}
         inertia={0.06}
         transparent={true}

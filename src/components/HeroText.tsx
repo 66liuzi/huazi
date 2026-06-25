@@ -34,7 +34,10 @@ export default function HeroText() {
     >
       <motion.p
         variants={item}
-        className="text-sm tracking-[0.3em] uppercase text-cyan-400/80 mb-6 -translate-y-16"
+        className="text-sm tracking-[0.3em] uppercase text-white mix-blend-difference mb-6 -translate-y-16"
+        style={{
+          textShadow: '0 0 12px rgba(0,0,0,0.25), 0 0 24px rgba(0,0,0,0.15)',
+        }}
       >
         HELLO
       </motion.p>
@@ -43,7 +46,11 @@ export default function HeroText() {
         variants={item}
         className="text-6xl md:text-8xl lg:text-9xl font-thin tracking-[0.02em] mb-6 -translate-y-6 font-[family-name:var(--font-cinzel)]"
       >
-        <span className="bg-gradient-to-br from-white via-cyan-100 to-blue-200 bg-clip-text text-transparent">
+        <span className="text-white mix-blend-difference"
+          style={{
+            textShadow: '0 0 20px rgba(0,0,0,0.3), 0 0 40px rgba(0,0,0,0.15)',
+          }}
+        >
           刘洋华子
         </span>
       </motion.h1>
@@ -62,11 +69,11 @@ export default function HeroText() {
         Creating cinematic visual experiences with motion, sound and emotion.
       </motion.p>
 
-      <motion.div variants={item} className="mt-10 pt-6">
+      <motion.div variants={item} className="mt-12 pt-8">
         <button
           onClick={scrollToPortfolio}
-          className="relative inline-flex items-center justify-center gap-4 px-10 py-4
-                     text-white font-light text-base tracking-[0.15em]
+          className="relative inline-flex items-center justify-center gap-5 px-16 py-5
+                     text-white font-light text-lg tracking-[0.15em]
                      transition-all duration-500 hover:scale-105
                      border border-white/15 hover:border-cyan-400/50 rounded-full
                      shadow-[0_0_40px_rgba(34,211,238,0.1)] hover:shadow-[0_0_60px_rgba(34,211,238,0.25)]"
@@ -76,8 +83,8 @@ export default function HeroText() {
             WebkitBackdropFilter: 'blur(80px)',
           }}
         >
-          <span>查看作品集</span>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span className="whitespace-nowrap pl-1">查看作品集</span>
+          <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
           </svg>
         </button>

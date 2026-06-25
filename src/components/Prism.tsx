@@ -319,7 +319,7 @@ const Prism = ({
       window.addEventListener('pointermove', onPointerMove, { passive: true });
       window.addEventListener('mouseleave', onLeave);
       window.addEventListener('blur', onBlur);
-      program.uniforms.uUseBaseWobble.value = 0;
+      program.uniforms.uUseBaseWobble.value = 1;
     } else if (animationType === '3drotate') {
       program.uniforms.uUseBaseWobble.value = 0;
     } else {
@@ -333,21 +333,26 @@ const Prism = ({
       let continueRAF = true;
 
       if (animationType === 'hover') {
+        // Autonomous base rotation (always active, even when mouse is idle)
+        const autoYaw = Math.sin(time * 0.28) * 0.15;
+        const autoPitch = Math.cos(time * 0.35 + 1.5) * 0.1;
+        const autoRoll = Math.sin(time * 0.22 + 2.8) * 0.06;
+
         const maxPitch = 0.6 * HOVSTR;
         const maxYaw = 0.6 * HOVSTR;
-        targetYaw = (pointer.inside ? -pointer.x : 0) * maxYaw;
-        targetPitch = (pointer.inside ? pointer.y : 0) * maxPitch;
+        targetYaw = autoYaw + (pointer.inside ? -pointer.x : 0) * maxYaw;
+        targetPitch = autoPitch + (pointer.inside ? pointer.y : 0) * maxPitch;
         const prevYaw = yaw;
         const prevPitch = pitch;
         const prevRoll = roll;
         yaw = lerp(prevYaw, targetYaw, INERT);
         pitch = lerp(prevPitch, targetPitch, INERT);
-        roll = lerp(prevRoll, 0, 0.1);
+        roll = lerp(prevRoll, autoRoll, 0.1);
         program.uniforms.uRot.value = setMat3FromEuler(yaw, pitch, roll, rotBuf);
 
         if (NOISE_IS_ZERO) {
           const settled =
-            Math.abs(yaw - targetYaw) < 1e-4 && Math.abs(pitch - targetPitch) < 1e-4 && Math.abs(roll) < 1e-4;
+            Math.abs(yaw - targetYaw) < 1e-4 && Math.abs(pitch - targetPitch) < 1e-4 && Math.abs(roll - autoRoll) < 1e-4;
           if (settled) continueRAF = false;
         }
       } else if (animationType === '3drotate') {
