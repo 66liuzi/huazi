@@ -314,7 +314,7 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
             background: `linear-gradient(135deg,rgba(20,20,30,0.92),rgba(15,15,25,0.92))`,
             border: `1px solid ${color1}20`,
             boxShadow: `0 0 120px ${color1}10`,
-            marginLeft: '2.25rem',
+            marginLeft: '0.5rem',
             marginRight: '2.25rem',
           }}
         >
