@@ -347,7 +347,7 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
             WebkitOverflowScrolling: 'touch',
             cursor: isGrabbing ? 'grabbing' : 'grab',
             userSelect: 'none',
-            touchAction: 'pan-y',
+            touchAction: 'pan-x',
           }}
         >
           {TRIPLE.map((c, i) => {

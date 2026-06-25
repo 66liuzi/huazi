@@ -202,8 +202,8 @@ const Prism = ({
           col = clamp(hueRotation(uHueShift) * col, 0.0, 1.0);
         }
 
-        // Breathing glow — multi-octave pulsing for organic brightness rhythm
-        float breathe = 1.0 + 0.28 * (
+        // Subtle brightness variation — barely perceptible
+        float breathe = 1.0 + 0.06 * (
           sin(iTime * uTimeScale * 0.37 + 0.7) *
           cos(iTime * uTimeScale * 0.53 - 0.3)
         );
