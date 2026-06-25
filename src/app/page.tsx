@@ -69,7 +69,7 @@ export default function Home() {
       </section>
 
       {/* Portfolio Section */}
-      <section id="portfolio-section" className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 md:px-6 py-24">
+      <section id="portfolio-section" className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 md:px-6 py-24" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 100vh' }}>
         <div
           className="absolute top-0 left-0 overflow-hidden pointer-events-auto"
           style={{

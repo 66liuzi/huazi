@@ -193,7 +193,9 @@ export default function Orb({
     const container = ctnDom.current;
     if (!container) return;
 
-    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
+    const isMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth < 768;
+    const dprCap = isMobile ? 1.5 : 2;
+    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false, dpr: Math.min(dprCap, window.devicePixelRatio || 1) });
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 0);
     container.appendChild(gl.canvas);
@@ -219,7 +221,7 @@ export default function Orb({
 
     function resize() {
       if (!container) return;
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(dprCap, window.devicePixelRatio || 1);
       const width = container.clientWidth;
       const height = container.clientHeight;
       if (width === 0 || height === 0) return;

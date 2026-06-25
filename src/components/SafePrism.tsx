@@ -51,12 +51,12 @@ export default function SafePrism() {
         hueShift={0.35}
         colorFrequency={2.2}
         noise={0.02}
-        glow={isMobile ? 1.2 : 1.5}
-        bloom={isMobile ? 0.9 : 1.2}
+        glow={isMobile ? 1.5 : 1.8}
+        bloom={isMobile ? 1.1 : 1.5}
         hoverStrength={isMobile ? 1.5 : 2.5}
         inertia={0.06}
         transparent={true}
-        maxDpr={isMobile ? 1.5 : 2}
+        maxDpr={isMobile ? 1.25 : 2}
       />
     </ErrorBoundary>
   );
