@@ -327,11 +327,11 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
         </div>
 
         {/* Left / Right arrow buttons */}
-        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(-1)}} className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/8 transition-colors" style={{background:'rgba(255,255,255,0.05)'}}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7"/></svg>
+        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(-1)}} className="absolute left-3 md:left-5 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all duration-200 group/arrow" style={{background:'rgba(255,255,255,0.1)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 0 20px rgba(0,0,0,0.4)'}}>
+          <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
         </button>
-        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(1)}} className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/8 transition-colors" style={{background:'rgba(255,255,255,0.05)'}}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7"/></svg>
+        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(1)}} className="absolute right-3 md:right-5 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all duration-200 group/arrow" style={{background:'rgba(255,255,255,0.1)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 0 20px rgba(0,0,0,0.4)'}}>
+          <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
         </button>
 
         {/* Scrollable card track */}
