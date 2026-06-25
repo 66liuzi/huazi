@@ -100,6 +100,8 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
     lastTime: 0,
   });
   const momentumRaf = useRef(0);
+  const suppressHoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const suppressHover = useRef(false);
 
   const doReset = useCallback((el: HTMLDivElement, offset: number) => {
     const now = performance.now();
@@ -176,6 +178,8 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
 
     if (!d.didDrag && Math.abs(dx) > DRAG_THRESHOLD) {
       d.didDrag = true;
+      // Suppress card hover effects during drag
+      suppressHover.current = true;
       // Prevent text selection once we know it's a drag
       document.body.style.userSelect = 'none';
       document.body.style.cursor = 'grabbing';
@@ -204,6 +208,12 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
     if (wasDrag) {
       startMomentum();
     }
+
+    // Clear hover suppression after a cooldown (so momentum doesn't trigger flicker)
+    clearTimeout(suppressHoverTimer.current);
+    suppressHoverTimer.current = setTimeout(() => {
+      suppressHover.current = false;
+    }, 250);
   }, [onDocumentMouseMove, startMomentum]);
 
   // ── Touch drag handlers (mobile) ──
@@ -232,6 +242,7 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
 
     if (!d.didDrag && Math.abs(dx) > DRAG_THRESHOLD) {
       d.didDrag = true;
+      suppressHover.current = true;
     }
 
     if (d.didDrag && scrollRef.current) {
@@ -251,6 +262,11 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
     if (wasDrag) {
       startMomentum();
     }
+
+    clearTimeout(suppressHoverTimer.current);
+    suppressHoverTimer.current = setTimeout(() => {
+      suppressHover.current = false;
+    }, 250);
   }, [startMomentum]);
 
   // ── Card click: only fire when NOT a drag ──
@@ -273,6 +289,7 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
       document.removeEventListener('mousemove', onDocumentMouseMove);
       document.removeEventListener('mouseup', onDocumentMouseUp);
       stopMomentum();
+      clearTimeout(suppressHoverTimer.current);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
     };
@@ -340,8 +357,8 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
             return (
               <div
                 key={id}
-                onMouseEnter={() => setActive(id)}
-                onMouseLeave={() => setActive(null)}
+                onMouseEnter={() => { if (!suppressHover.current) setActive(id); }}
+                onMouseLeave={() => { if (!suppressHover.current) setActive(null); }}
                 onClick={handleCardClick(c)}
                 className="flex-shrink-0 rounded-2xl border overflow-hidden transition-all duration-200 snap-center group"
                 style={{

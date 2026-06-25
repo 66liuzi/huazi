@@ -51,8 +51,8 @@ export default function SafePrism() {
         hueShift={0.35}
         colorFrequency={2.2}
         noise={0.02}
-        glow={isMobile ? 1.5 : 1.8}
-        bloom={isMobile ? 1.1 : 1.5}
+        glow={isMobile ? 0.8 : 1.1}
+        bloom={isMobile ? 0.6 : 0.8}
         hoverStrength={isMobile ? 1.5 : 2.5}
         inertia={0.06}
         transparent={true}
