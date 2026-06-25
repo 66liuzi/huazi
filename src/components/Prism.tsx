@@ -202,6 +202,13 @@ const Prism = ({
           col = clamp(hueRotation(uHueShift) * col, 0.0, 1.0);
         }
 
+        // Breathing glow — multi-octave pulsing for organic brightness rhythm
+        float breathe = 1.0 + 0.28 * (
+          sin(iTime * uTimeScale * 0.37 + 0.7) *
+          cos(iTime * uTimeScale * 0.53 - 0.3)
+        );
+        col = clamp(col * breathe, 0.0, 1.0);
+
         gl_FragColor = vec4(col, o.a);
       }
     `;
