@@ -216,58 +216,9 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
     }, 250);
   }, [onDocumentMouseMove, startMomentum]);
 
-  // ── Touch drag handlers (mobile) ──
-  const onContainerTouchStart = useCallback((e: React.TouchEvent) => {
-    const el = scrollRef.current;
-    if (!el || e.touches.length !== 1) return;
-    stopMomentum();
-
-    const t = e.touches[0];
-    drag.current = {
-      active: true,
-      didDrag: false,
-      startX: t.clientX,
-      startScrollLeft: el.scrollLeft,
-      velX: 0,
-      lastX: t.clientX,
-      lastTime: performance.now(),
-    };
-  }, [stopMomentum]);
-
-  const onContainerTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length !== 1) return;
-    const d = drag.current;
-    const t = e.touches[0];
-    const dx = t.clientX - d.startX;
-
-    if (!d.didDrag && Math.abs(dx) > DRAG_THRESHOLD) {
-      d.didDrag = true;
-      suppressHover.current = true;
-    }
-
-    if (d.didDrag && scrollRef.current) {
-      const now = performance.now();
-      const dt = Math.max(now - d.lastTime, 1);
-      d.velX = (t.clientX - d.lastX) / dt * 16;
-      d.lastX = t.clientX;
-      d.lastTime = now;
-      scrollRef.current.scrollLeft = d.startScrollLeft - dx;
-    }
-  }, []);
-
-  const onContainerTouchEnd = useCallback(() => {
-    const wasDrag = drag.current.didDrag;
-    drag.current.active = false;
-
-    if (wasDrag) {
-      startMomentum();
-    }
-
-    clearTimeout(suppressHoverTimer.current);
-    suppressHoverTimer.current = setTimeout(() => {
-      suppressHover.current = false;
-    }, 250);
-  }, [startMomentum]);
+  // ── Touch: rely on native overflow-x scroll + scroll-snap (mobile) ──
+  // No custom JS handlers — the browser's native touch scrolling
+  // naturally handles drag/scroll distinction and is far smoother.
 
   // ── Card click: only fire when NOT a drag ──
   const handleCardClick = useCallback((card: CardData) => (e: React.MouseEvent) => {
@@ -319,37 +270,72 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }} className="w-full">
-      <div className="relative w-full rounded-3xl overflow-hidden"
-        style={{ background: `linear-gradient(135deg,rgba(20,20,30,0.92),rgba(15,15,25,0.92))`, border:`1px solid ${color1}20`, boxShadow:`0 0 120px ${color1}10` }}>
-        {/* Title bar */}
-        <div className="absolute top-0 left-0 right-0 z-20 px-6 md:px-8 py-5 pointer-events-none">
-          <span className="text-sm md:text-base font-medium tracking-[0.2em] uppercase" style={{color:color1}}>{label}</span>
-        </div>
-
-        {/* Left / Right arrow buttons */}
-        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(-1)}} className="absolute left-3 md:left-5 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all duration-200 group/arrow" style={{background:'rgba(255,255,255,0.1)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 0 20px rgba(0,0,0,0.4)'}}>
-          <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
-        </button>
-        <button onClick={(e)=>{e.stopPropagation();scrollByAmount(1)}} className="absolute right-3 md:right-5 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all duration-200 group/arrow" style={{background:'rgba(255,255,255,0.1)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 0 20px rgba(0,0,0,0.4)'}}>
-          <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-        </button>
-
-        {/* Scrollable card track */}
-        <div
-          ref={scrollRef}
-          onMouseDown={onContainerMouseDown}
-          onTouchStart={onContainerTouchStart}
-          onTouchMove={onContainerTouchMove}
-          onTouchEnd={onContainerTouchEnd}
-          className="flex items-center gap-4 py-10 md:py-14 px-[8%] overflow-x-auto scrollbar-hide"
+      {/* Outer wrapper — arrow buttons sit here, outside the overflow-hidden card container */}
+      <div className="relative w-full">
+        {/* Left / Right arrow buttons — positioned relative to wrapper, NOT clipped by rounded corners */}
+        <button
+          onClick={(e) => { e.stopPropagation(); scrollByAmount(-1); }}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
           style={{
-            scrollSnapType: 'x mandatory',
-            WebkitOverflowScrolling: 'touch',
-            cursor: isGrabbing ? 'grabbing' : 'grab',
-            userSelect: 'none',
-            touchAction: 'pan-x',
+            background: 'rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            boxShadow: '0 0 24px rgba(0,0,0,0.5)',
+            transform: 'translateY(-50%)',
+          }}
+          aria-label="Scroll left"
+        >
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); scrollByAmount(1); }}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
+          style={{
+            background: 'rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            boxShadow: '0 0 24px rgba(0,0,0,0.5)',
+            transform: 'translateY(-50%)',
+          }}
+          aria-label="Scroll right"
+        >
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* Card container — rounded corners clip background, but buttons are OUTSIDE */}
+        <div className="relative w-full rounded-3xl overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg,rgba(20,20,30,0.92),rgba(15,15,25,0.92))`,
+            border: `1px solid ${color1}20`,
+            boxShadow: `0 0 120px ${color1}10`,
+            marginLeft: '2.25rem',
+            marginRight: '2.25rem',
           }}
         >
+          {/* Title bar */}
+          <div className="absolute top-0 left-0 right-0 z-20 px-6 md:px-8 py-5 pointer-events-none">
+            <span className="text-sm md:text-base font-medium tracking-[0.2em] uppercase" style={{ color: color1 }}>{label}</span>
+          </div>
+
+          {/* Scrollable card track */}
+          <div
+            ref={scrollRef}
+            onMouseDown={onContainerMouseDown}
+            className="flex items-center gap-4 py-10 md:py-14 px-[8%] overflow-x-auto scrollbar-hide"
+            style={{
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              cursor: isGrabbing ? 'grabbing' : 'grab',
+              userSelect: 'none',
+              touchAction: 'pan-x',
+            }}
+          >
           {TRIPLE.map((c, i) => {
             const id = c.id * 1000 + i;
             const a = active === id;
@@ -445,8 +431,9 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
           })}
         </div>
 
-        {/* Bottom fade gradient */}
-        <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{ background: `linear-gradient(transparent,rgba(15,15,25,0.8))` }} />
+          {/* Bottom fade gradient */}
+          <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{ background: `linear-gradient(transparent,rgba(15,15,25,0.8))` }} />
+        </div>
       </div>
 
       <div className="text-center mt-4">
