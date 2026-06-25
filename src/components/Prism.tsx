@@ -20,6 +20,7 @@ interface PrismProps {
   bloom?: number;
   suspendWhenOffscreen?: boolean;
   timeScale?: number;
+  maxDpr?: number;
 }
 
 const Prism = ({
@@ -38,6 +39,7 @@ const Prism = ({
   bloom = 1,
   suspendWhenOffscreen = false,
   timeScale = 0.5,
+  maxDpr = 2,
 }: PrismProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +66,7 @@ const Prism = ({
     const HOVSTR = Math.max(0, hoverStrength || 1);
     const INERT = Math.max(0, Math.min(1, inertia || 0.12));
 
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(maxDpr, window.devicePixelRatio || 1);
     const renderer = new Renderer({ dpr, alpha: transparent, antialias: false });
     const gl = renderer.gl;
     gl.disable(gl.DEPTH_TEST);

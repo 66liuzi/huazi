@@ -84,9 +84,7 @@ export default function HeroText() {
                      border border-white/15 hover:border-cyan-400/50 rounded-full
                      shadow-[0_0_40px_rgba(34,211,238,0.1)] hover:shadow-[0_0_60px_rgba(34,211,238,0.25)]"
           style={{
-            background: 'rgba(255,255,255,0.05)',
-            backdropFilter: 'blur(80px)',
-            WebkitBackdropFilter: 'blur(80px)',
+            background: 'rgba(255,255,255,0.06)',
           }}
         >
           <span className="whitespace-nowrap pl-1">查看作品集</span>

@@ -33,12 +33,13 @@ export default function Home() {
   const [videoViewerOpen, setVideoViewerOpen] = useState(false);
   const [videoData, setVideoData] = useState({ src: '', title: '' });
   const [expandedFolder, setExpandedFolder] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
 
   // Auto-expand portfolio on touch devices
   useEffect(() => {
-    if (window.matchMedia('(hover: none)').matches) {
-      setExpandedFolder(true);
-    }
+    const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    setIsTouch(touch);
+    if (touch) setExpandedFolder(true);
   }, []);
 
   const handleVideoCardClick = (card: { id: number; title: string; src?: string }) => {
@@ -48,7 +49,7 @@ export default function Home() {
 
   return (
     <main className="relative overflow-hidden">
-      <MouseGlow />
+      {!isTouch && <MouseGlow />}
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">

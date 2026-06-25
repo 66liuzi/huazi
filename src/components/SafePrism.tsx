@@ -20,8 +20,12 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode; fallbac
 export default function SafePrism() {
   const [hasError, setHasError] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    setIsMobile(window.matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth < 768);
+  }, []);
 
   useEffect(() => {
     try {
@@ -43,15 +47,16 @@ export default function SafePrism() {
         timeScale={0.55}
         height={3.5}
         baseWidth={5.5}
-        scale={3.2}
-        hueShift={0.15}
-        colorFrequency={2.8}
-        noise={0.03}
-        glow={1.5}
-        bloom={1.3}
-        hoverStrength={2.5}
+        scale={isMobile ? 2.5 : 3.2}
+        hueShift={0.35}
+        colorFrequency={2.2}
+        noise={0.02}
+        glow={isMobile ? 0.9 : 1.1}
+        bloom={isMobile ? 0.7 : 0.9}
+        hoverStrength={isMobile ? 1.5 : 2.5}
         inertia={0.06}
         transparent={true}
+        maxDpr={isMobile ? 1.5 : 2}
       />
     </ErrorBoundary>
   );
