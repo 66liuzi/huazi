@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, type Variants } from 'framer-motion';
+import { smoothScrollTo } from '@/lib/gsap';
 
 const container: Variants = {
   hidden: {},
@@ -21,8 +22,7 @@ const item: Variants = {
 
 export default function HeroText() {
   const scrollToPortfolio = () => {
-    const el = document.getElementById('portfolio-section');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    smoothScrollTo('#portfolio-section');
   };
 
   return (

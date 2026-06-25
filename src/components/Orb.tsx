@@ -235,6 +235,7 @@ export default function Orb({
 
     let targetHover = 0;
     let lastTime = 0;
+    let isFirstFrame = true;
     let currentRot = 0;
     const rotationSpeed = 0.3;
 
@@ -265,9 +266,15 @@ export default function Orb({
     container.addEventListener('mouseleave', handleMouseLeave);
 
     let rafId: number;
+    let running = true;
+    const stopLoop = () => { if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } };
+    const startLoop = () => { if (!rafId && running) { rafId = requestAnimationFrame(update); } };
+
     const update = (t: number) => {
+      if (!running) return;
       rafId = requestAnimationFrame(update);
-      const dt = (t - lastTime) * 0.001;
+      if (isFirstFrame) { isFirstFrame = false; lastTime = t; renderer.render({ scene: mesh }); return; }
+      const dt = Math.min((t - lastTime) * 0.001, 0.1);
       lastTime = t;
       program.uniforms.iTime.value = t * 0.001;
       program.uniforms.hue.value = hue;
@@ -286,9 +293,25 @@ export default function Orb({
     };
     rafId = requestAnimationFrame(update);
 
+    // IntersectionObserver: pause rendering when offscreen
+    const io = new IntersectionObserver((entries) => {
+      running = entries[0].isIntersecting;
+      if (running) { startLoop(); } else { stopLoop(); }
+    }, { threshold: 0 });
+    io.observe(container);
+
+    // WebGL context loss handling
+    const handleContextLost = (e: Event) => { e.preventDefault(); stopLoop(); };
+    const handleContextRestored = () => { if (running) startLoop(); };
+    gl.canvas.addEventListener('webglcontextlost', handleContextLost);
+    gl.canvas.addEventListener('webglcontextrestored', handleContextRestored);
+
     return () => {
-      cancelAnimationFrame(rafId);
+      stopLoop();
+      io.disconnect();
       ro.disconnect();
+      gl.canvas.removeEventListener('webglcontextlost', handleContextLost);
+      gl.canvas.removeEventListener('webglcontextrestored', handleContextRestored);
       window.removeEventListener('resize', resize);
       container.removeEventListener('mousemove', handleMouseMove);
       container.removeEventListener('mouseleave', handleMouseLeave);

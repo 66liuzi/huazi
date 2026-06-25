@@ -385,9 +385,17 @@ const Prism = ({
       startRAF();
     }
 
+    // WebGL context loss handling
+    const onCtxLost = (e: Event) => { e.preventDefault(); stopRAF(); };
+    const onCtxRestored = () => { startRAF(); };
+    gl.canvas.addEventListener('webglcontextlost', onCtxLost);
+    gl.canvas.addEventListener('webglcontextrestored', onCtxRestored);
+
     return () => {
       stopRAF();
       ro.disconnect();
+      gl.canvas.removeEventListener('webglcontextlost', onCtxLost);
+      gl.canvas.removeEventListener('webglcontextrestored', onCtxRestored);
       if (animationType === 'hover' && onPointerMove) {
         window.removeEventListener('pointermove', onPointerMove);
       }

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef } from 'react';
 
+const IDLE_TIMEOUT_MS = 1500;
+const LERP_FACTOR = 0.08;
+
 export default function MouseGlow() {
   const glowRef = useRef<HTMLDivElement>(null);
 
@@ -13,25 +16,38 @@ export default function MouseGlow() {
     let y = 0;
     let currentX = 0;
     let currentY = 0;
+    let running = true;
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const resetIdle = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      if (!running) running = true;
+      idleTimer = setTimeout(() => { running = false; }, IDLE_TIMEOUT_MS);
+    };
 
     const onMove = (e: MouseEvent) => {
       x = e.clientX;
       y = e.clientY;
+      resetIdle();
     };
 
     const animate = () => {
-      currentX += (x - currentX) * 0.08;
-      currentY += (y - currentY) * 0.08;
-      glow.style.transform = `translate(${currentX - 200}px, ${currentY - 200}px)`;
+      if (running) {
+        currentX += (x - currentX) * LERP_FACTOR;
+        currentY += (y - currentY) * LERP_FACTOR;
+        glow.style.transform = `translate(${currentX - 200}px, ${currentY - 200}px)`;
+      }
       requestAnimationFrame(animate);
     };
 
-    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mousemove', onMove, { passive: true });
     const frame = requestAnimationFrame(animate);
 
     return () => {
+      running = false;
       window.removeEventListener('mousemove', onMove);
       cancelAnimationFrame(frame);
+      if (idleTimer) clearTimeout(idleTimer);
     };
   }, []);
 
