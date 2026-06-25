@@ -34,9 +34,12 @@ export default function HeroText() {
     >
       <motion.p
         variants={item}
-        className="text-sm tracking-[0.3em] uppercase text-white mix-blend-difference mb-6 -translate-y-16"
+        className="text-sm tracking-[0.3em] uppercase mb-6 -translate-y-16"
         style={{
-          textShadow: '0 0 12px rgba(0,0,0,0.25), 0 0 24px rgba(0,0,0,0.15)',
+          color: '#ffffff',
+          mixBlendMode: 'difference' as React.CSSProperties['mixBlendMode'],
+          WebkitTextStroke: '0.5px rgba(128,128,128,0.4)',
+          filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.5)) brightness(1.15)',
         }}
       >
         HELLO
@@ -46,9 +49,12 @@ export default function HeroText() {
         variants={item}
         className="text-6xl md:text-8xl lg:text-9xl font-thin tracking-[0.02em] mb-6 -translate-y-6 font-[family-name:var(--font-cinzel)]"
       >
-        <span className="text-white mix-blend-difference"
+        <span
           style={{
-            textShadow: '0 0 20px rgba(0,0,0,0.3), 0 0 40px rgba(0,0,0,0.15)',
+            color: '#ffffff',
+            mixBlendMode: 'difference' as React.CSSProperties['mixBlendMode'],
+            WebkitTextStroke: '0.75px rgba(128,128,128,0.35)',
+            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45)) brightness(1.15)',
           }}
         >
           刘洋华子
