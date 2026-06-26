@@ -69,10 +69,8 @@ export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoV
                     src={videoSrc}
                     className="w-full h-full object-cover"
                     controls
-                    autoPlay
-                    muted
+                    preload="none"
                     playsInline
-                    loop
                   />
                 ) : (
                   /* Placeholder when no video source */

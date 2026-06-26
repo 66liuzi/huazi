@@ -87,7 +87,7 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
   const lastResetTime = useRef(0);
   const CW = 200; const GAP = 16; const CARD_STEP = CW + GAP;
   const cardCount = cards.length;
-  const TRIPLE = useMemo(() => [...cards, ...cards, ...cards, ...cards, ...cards], [cards]);
+  const TRIPLE = useMemo(() => [...cards, ...cards, ...cards], [cards]);
 
   // ── Drag state (ref so closures always see current values) ──
   const drag = useRef({
@@ -102,6 +102,42 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
   const momentumRaf = useRef(0);
   const suppressHoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const suppressHover = useRef(false);
+  // ── IntersectionObserver for lazy-loading poster images ──
+  const posterObserver = useRef<IntersectionObserver | null>(null);
+  const visiblePosters = useRef<Set<string>>(new Set());
+  const [, forceTick] = useState(0); // forces re-render when a poster enters viewport
+
+  useEffect(() => {
+    posterObserver.current = new IntersectionObserver(
+      (entries) => {
+        let changed = false;
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const key = entry.target.getAttribute('data-poster-key');
+            if (key && !visiblePosters.current.has(key)) {
+              visiblePosters.current.add(key);
+              changed = true;
+            }
+          }
+        });
+        if (changed) forceTick(t => t + 1);
+      },
+      { root: null, rootMargin: '300px' }
+    );
+    return () => posterObserver.current?.disconnect();
+  }, []);
+
+  // Register a card element with the observer
+  const registerCardRef = useCallback((el: HTMLDivElement | null, posterKey: string) => {
+    if (el && posterObserver.current) {
+      el.setAttribute('data-poster-key', posterKey);
+      posterObserver.current.observe(el);
+    }
+  }, []);
+
+  const isPosterVisible = useCallback((posterKey: string) => {
+    return visiblePosters.current.has(posterKey);
+  }, []);
 
   const doReset = useCallback((el: HTMLDivElement, offset: number) => {
     const now = performance.now();
@@ -340,9 +376,12 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
             const id = c.id * 1000 + i;
             const a = active === id;
             const d = active !== null && !a;
+            const posterKey = `${c.id}`;
+            const showPoster = isPosterVisible(posterKey);
             return (
               <div
                 key={id}
+                ref={(el) => registerCardRef(el, posterKey)}
                 onMouseEnter={() => { if (!suppressHover.current) setActive(id); }}
                 onMouseLeave={() => { if (!suppressHover.current) setActive(null); }}
                 onClick={handleCardClick(c)}
@@ -360,7 +399,7 @@ function ExpandedInner({ color1, color2, cards, onCardClick, label }: { color1: 
                 }}
               >
                 {/* Poster / gradient background */}
-                {c.poster ? (
+                {c.poster && showPoster ? (
                   <img src={c.poster} className="absolute inset-0 w-full h-full object-cover" alt={c.title} style={{ zIndex: 0 }} loading="lazy" />
                 ) : (
                   <div className="absolute inset-0" style={{ background: `linear-gradient(135deg,${c.gradient},#0a0a0f)`, zIndex: 0 }} />
