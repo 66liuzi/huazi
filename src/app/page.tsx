@@ -11,25 +11,24 @@ const COS_VIDEO_BASE = 'https://huazi-1324532363.cos.ap-beijing.myqcloud.com/med
 const COS_POSTER_BASE = 'https://huazi-1324532363.cos.ap-beijing.myqcloud.com/media/video-posters';
 const COS_IMAGE_BASE = 'https://huazi-1324532363.cos.ap-beijing.myqcloud.com/media/images';
 
-// Video works (real-world footage)
+// Video works (real-world footage) — new videos first
 const videoCards = [
-  { id: 1, title: '鼓楼', color: '#3a1a3e', gradient: '#3a1a3e', src: `${COS_VIDEO_BASE}/gulou.mp4`, poster: `${COS_POSTER_BASE}/gulou_poster.jpg`, w: 1920, h: 1080 },
-  { id: 2, title: '12月9日', color: '#2a1a4e', gradient: '#2a1a4e', src: `${COS_VIDEO_BASE}/dec09.mp4`, poster: `${COS_POSTER_BASE}/dec09_poster.jpg`, w: 1920, h: 1080 },
-  { id: 4, title: '2月25日', color: '#1a3e2a', gradient: '#1a3e2a', src: `${COS_VIDEO_BASE}/feb25.mp4`, poster: `${COS_POSTER_BASE}/feb25_poster.jpg`, w: 1920, h: 1080 },
-  { id: 5, title: '7月24日', color: '#2a3a4e', gradient: '#2a3a4e', src: `${COS_VIDEO_BASE}/jul24.mp4`, poster: `${COS_POSTER_BASE}/jul24_poster.jpg`, w: 1920, h: 1080 },
-  { id: 6, title: '8月4日', color: '#3e2a2a', gradient: '#3e2a2a', src: `${COS_VIDEO_BASE}/aug04.mp4`, poster: `${COS_POSTER_BASE}/aug04_poster.jpg`, w: 1920, h: 1080 },
-  { id: 7, title: '8月9日', color: '#2a4e3a', gradient: '#2a4e3a', src: `${COS_VIDEO_BASE}/aug09.mp4`, poster: `${COS_POSTER_BASE}/aug09_poster.jpg`, w: 1920, h: 1080 },
-  { id: 8, title: '啤酒视频优化', color: '#4e3a1a', gradient: '#4e3a1a', src: `${COS_VIDEO_BASE}/beer.mp4`, poster: `${COS_POSTER_BASE}/beer_poster.jpg`, w: 1920, h: 1080 },
-  { id: 9, title: '滨海运动会', color: '#1a4e4e', gradient: '#1a4e4e', src: `${COS_VIDEO_BASE}/sports.mp4`, poster: `${COS_POSTER_BASE}/sports_poster.jpg`, w: 1920, h: 1080 },
   { id: 10, title: '这座城', color: '#3a2a4e', gradient: '#3a2a4e', src: `${COS_VIDEO_BASE}/zhezuocheng_pian.mp4`, poster: `${COS_POSTER_BASE}/zhezuocheng_pian_poster.jpg`, w: 1920, h: 1080 },
   { id: 11, title: '扎个我', color: '#4e3a2a', gradient: '#4e3a2a', src: `${COS_VIDEO_BASE}/zhagewo_pian.mp4`, poster: `${COS_POSTER_BASE}/zhagewo_pian_poster.jpg`, w: 1920, h: 1080 },
   { id: 12, title: '此路昭昭', color: '#2a4e4e', gradient: '#2a4e4e', src: `${COS_VIDEO_BASE}/ciluzhaozhao_pian.mp4`, poster: `${COS_POSTER_BASE}/ciluzhaozhao_pian_poster.jpg`, w: 1920, h: 1080 },
   { id: 13, title: '黄崖关', color: '#4e2a3a', gradient: '#4e2a3a', src: `${COS_VIDEO_BASE}/huangyaguan.mp4`, poster: `${COS_POSTER_BASE}/huangyaguan_poster.jpg`, w: 1206, h: 732 },
+  { id: 4, title: '2月25日', color: '#1a3e2a', gradient: '#1a3e2a', src: `${COS_VIDEO_BASE}/feb25.mp4`, poster: `${COS_POSTER_BASE}/feb25_poster.jpg`, w: 1920, h: 1080 },
+  { id: 6, title: '8月4日', color: '#3e2a2a', gradient: '#3e2a2a', src: `${COS_VIDEO_BASE}/aug04.mp4`, poster: `${COS_POSTER_BASE}/aug04_poster.jpg`, w: 1920, h: 1080 },
+  { id: 8, title: '啤酒视频优化', color: '#4e3a1a', gradient: '#4e3a1a', src: `${COS_VIDEO_BASE}/beer.mp4`, poster: `${COS_POSTER_BASE}/beer_poster.jpg`, w: 1920, h: 1080 },
+  { id: 9, title: '滨海运动会', color: '#1a4e4e', gradient: '#1a4e4e', src: `${COS_VIDEO_BASE}/sports.mp4`, poster: `${COS_POSTER_BASE}/sports_poster.jpg`, w: 1920, h: 1080 },
 ];
 
 // AI Creation works
 const aiCards = [
   { id: 3, title: '纯AI版', color: '#4e2a1a', gradient: '#4e2a1a', src: `${COS_VIDEO_BASE}/jan27.mp4`, poster: `${COS_POSTER_BASE}/jan27_poster.jpg`, w: 1920, h: 1080 },
+  { id: 1, title: '鼓楼', color: '#3a1a3e', gradient: '#3a1a3e', src: `${COS_VIDEO_BASE}/gulou.mp4`, poster: `${COS_POSTER_BASE}/gulou_poster.jpg`, w: 1920, h: 1080 },
+  { id: 2, title: '12月9日', color: '#2a1a4e', gradient: '#2a1a4e', src: `${COS_VIDEO_BASE}/dec09.mp4`, poster: `${COS_POSTER_BASE}/dec09_poster.jpg`, w: 1920, h: 1080 },
+  { id: 5, title: '7月24日', color: '#2a3a4e', gradient: '#2a3a4e', src: `${COS_VIDEO_BASE}/jul24.mp4`, poster: `${COS_POSTER_BASE}/jul24_poster.jpg`, w: 1920, h: 1080 },
 ];
 
 // Sound Design works
