@@ -94,6 +94,7 @@ function CloseButton({ color, onClose }: { color: string; onClose: () => void })
 export default function PortfolioGrid({ panels, onVideoClick }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isTouch, setIsTouch] = useState(false);
+  const [imagePreview, setImagePreview] = useState<{ src: string; title: string } | null>(null);
 
   useEffect(() => {
     const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
@@ -137,8 +138,63 @@ export default function PortfolioGrid({ panels, onVideoClick }: Props) {
             panel={activePanel}
             onClose={handleClose}
             onVideoClick={onVideoClick}
+            onImageClick={(src, title) => setImagePreview({ src, title })}
             isTouch={isTouch}
           />
+        )}
+      </AnimatePresence>
+
+      {/* === Full-screen Image Preview === */}
+      <AnimatePresence>
+        {imagePreview && (
+          <motion.div
+            className="fixed inset-0 z-[200] flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.96)', willChange: 'opacity' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setImagePreview(null)}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setImagePreview(null); }}
+              className="absolute top-4 right-4 md:top-6 md:right-6 z-[210] w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 group"
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: '1.5px solid rgba(255,255,255,0.3)',
+                boxShadow: '0 0 24px rgba(255,255,255,0.12)',
+              }}
+              aria-label="Close image"
+            >
+              <svg className="w-5 h-5 text-white/90 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative rounded-xl overflow-hidden"
+              style={{
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 0 40px rgba(168,85,247,0.1)',
+              }}
+            >
+              <img
+                src={imagePreview.src}
+                alt={imagePreview.title}
+                className="object-contain"
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '85vh',
+                  transform: 'translateZ(0)',
+                }}
+                referrerPolicy="no-referrer"
+              />
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
@@ -233,11 +289,13 @@ function ExpandedOverlay({
   panel,
   onClose,
   onVideoClick,
+  onImageClick,
   isTouch,
 }: {
   panel: Panel;
   onClose: () => void;
   onVideoClick?: (card: VideoCard) => void;
+  onImageClick?: (src: string, title: string) => void;
   isTouch: boolean;
 }) {
   if (isTouch) {
@@ -277,6 +335,7 @@ function ExpandedOverlay({
               panel={panel}
               onClose={onClose}
               onVideoClick={onVideoClick}
+              onImageClick={onImageClick}
               isTouch={isTouch}
             />
           </motion.div>
@@ -286,19 +345,17 @@ function ExpandedOverlay({
     );
   }
 
-  // Desktop: absolute overlay
+  // Desktop: absolute overlay — height fits content, no forced stretch
   return (
     <>
       <div className="fixed inset-0 z-20" onClick={onClose} style={{ cursor: 'default' }} />
       <motion.div
-        className="absolute inset-0 z-30 rounded-2xl overflow-hidden"
+        className="absolute top-0 left-0 right-0 z-30 rounded-2xl overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, rgba(20,20,30,0.96), rgba(15,15,25,0.96))',
           border: `1px solid ${panel.color1}40`,
           boxShadow: `0 0 80px ${panel.color1}15`,
           willChange: 'opacity',
-          minHeight: '380px',
-          height: 'min(58vh, 520px)',
         }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -310,6 +367,7 @@ function ExpandedOverlay({
           panel={panel}
           onClose={onClose}
           onVideoClick={onVideoClick}
+          onImageClick={onImageClick}
           isTouch={isTouch}
         />
       </motion.div>
@@ -322,11 +380,13 @@ function ExpandedContent({
   panel,
   onClose,
   onVideoClick,
+  onImageClick,
   isTouch,
 }: {
   panel: Panel;
   onClose: () => void;
   onVideoClick?: (card: VideoCard) => void;
+  onImageClick?: (src: string, title: string) => void;
   isTouch: boolean;
 }) {
   return (
@@ -362,7 +422,7 @@ function ExpandedContent({
 
       {/* Content area — no overflow wrapper, let inner scroll handle natively */}
       {panel.type === 'image' ? (
-        <ImageContent panel={panel} />
+        <ImageContent panel={panel} onImageClick={onImageClick} />
       ) : (
         <VideoGallery
           panel={panel}
@@ -696,15 +756,22 @@ function SingleCardPoster({ card }: { card: VideoCard & { cardW: number; cardH: 
 }
 
 // === Image Content ===
-function ImageContent({ panel }: { panel: Panel }) {
+function ImageContent({ panel, onImageClick }: { panel: Panel; onImageClick?: (src: string, title: string) => void }) {
+  const handleClick = () => {
+    if (panel.imageSrc && onImageClick) {
+      onImageClick(panel.imageSrc, panel.imageTitle || panel.label);
+    }
+  };
+
   return (
     <div className="w-full flex flex-col items-center justify-center px-4 pb-3 py-2">
       <div
-        className="relative rounded-xl overflow-hidden max-w-full"
+        className="relative rounded-xl overflow-hidden max-w-full cursor-pointer transition-transform hover:scale-[1.02]"
         style={{
           border: `1px solid ${panel.color1}30`,
           boxShadow: `0 0 60px ${panel.color1}10`,
         }}
+        onClick={handleClick}
       >
         {panel.imageSrc ? (
           <img
@@ -736,7 +803,7 @@ function ImageContent({ panel }: { panel: Panel }) {
         )}
       </div>
       <span className="text-[10px] tracking-wider uppercase mt-2.5" style={{ color: `${panel.color1}60` }}>
-        {(panel.imageTitle || panel.label) + ' · 点击查看'}
+        {(panel.imageTitle || panel.label) + ' · 点击放大'}
       </span>
     </div>
   );
