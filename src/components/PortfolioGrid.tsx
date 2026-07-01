@@ -245,7 +245,7 @@ function ExpandedOverlay({
   isTouch: boolean;
 }) {
   if (isTouch) {
-    // Mobile: fixed full-screen modal
+    // Mobile: centered modal — NOT full screen
     return (
       <>
         {/* Backdrop */}
@@ -258,27 +258,33 @@ function ExpandedOverlay({
           transition={{ duration: 0.2 }}
           onClick={onClose}
         />
-        {/* Modal panel — NO overflow-hidden so close button never gets clipped */}
+        {/* Modal panel — centered, compact, NOT full screen */}
         <motion.div
-          className="fixed inset-2 z-50 rounded-2xl flex flex-col"
-          style={{
-            background: 'linear-gradient(135deg, rgba(20,20,30,0.97), rgba(15,15,25,0.97))',
-            border: `1px solid ${panel.color1}40`,
-            boxShadow: `0 0 60px ${panel.color1}20`,
-            willChange: 'opacity',
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={onClose}
         >
-          <ExpandedContent
-            panel={panel}
-            onClose={onClose}
-            onVideoClick={onVideoClick}
-            isTouch={isTouch}
-          />
+          <motion.div
+            className="w-full max-w-sm rounded-2xl flex flex-col"
+            style={{
+              background: 'linear-gradient(135deg, rgba(20,20,30,0.97), rgba(15,15,25,0.97))',
+              border: `1px solid ${panel.color1}40`,
+              boxShadow: `0 0 60px ${panel.color1}20`,
+              maxHeight: '62vh',
+              willChange: 'opacity',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExpandedContent
+              panel={panel}
+              onClose={onClose}
+              onVideoClick={onVideoClick}
+              isTouch={isTouch}
+            />
+          </motion.div>
         </motion.div>
         {/* Close button — OUTSIDE modal, always on top, never clipped */}
         <CloseButton color={panel.color1} onClose={onClose} />
@@ -361,7 +367,7 @@ function ExpandedContent({
       </div>
 
       {/* Content area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {panel.type === 'image' ? (
           <ImageContent panel={panel} />
         ) : (
@@ -512,26 +518,18 @@ function VideoGallery({
       const el = scrollRef.current;
       if (!el || isResetting.current) return;
 
-      if (isTouch) {
-        // Mobile: also do infinite scroll reset
-        const maxScroll = el.scrollWidth - el.clientWidth;
-        const threshold = oneSetWidth * 0.5;
-        if (el.scrollLeft < threshold) {
-          doReset(el, oneSetWidth);
-        } else if (el.scrollLeft > maxScroll - threshold) {
-          doReset(el, -oneSetWidth);
-        }
-      } else {
-        const maxScroll = el.scrollWidth - el.clientWidth;
-        const threshold = oneSetWidth;
-        if (el.scrollLeft < threshold) {
-          doReset(el, oneSetWidth);
-        } else if (el.scrollLeft > maxScroll - threshold) {
-          doReset(el, -oneSetWidth);
-        }
+      // Unified threshold: 25% of one set width
+      // This gives plenty of scroll room before a reset triggers
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      const threshold = oneSetWidth * 0.25;
+
+      if (el.scrollLeft < threshold) {
+        doReset(el, oneSetWidth);
+      } else if (el.scrollLeft > maxScroll - threshold) {
+        doReset(el, -oneSetWidth);
       }
     });
-  }, [oneSetWidth, doReset, hasMultiple, isTouch]);
+  }, [oneSetWidth, doReset, hasMultiple]);
 
   // Cleanup rAF on unmount
   useEffect(() => {
@@ -546,10 +544,10 @@ function VideoGallery({
     if (!el) return;
     const avgStep = oneSetWidth / cards.length;
     const maxScroll = el.scrollWidth - el.clientWidth;
-    const threshold = oneSetWidth;
-    if (dir === 1 && el.scrollLeft > maxScroll - threshold * 1.5) {
+    const threshold = oneSetWidth * 0.25;
+    if (dir === 1 && el.scrollLeft > maxScroll - threshold) {
       doReset(el, -oneSetWidth);
-    } else if (dir === -1 && el.scrollLeft < threshold * 1.5) {
+    } else if (dir === -1 && el.scrollLeft < threshold) {
       doReset(el, oneSetWidth);
     }
     el.scrollBy({ left: dir * avgStep, behavior: 'smooth' });
@@ -628,6 +626,7 @@ function VideoGallery({
           style={{
             scrollSnapType: isTouch ? 'none' : 'x mandatory',
             WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x',
           }}
         >
           {DOUBLE.map((c, i) => {

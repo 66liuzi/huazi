@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Prism from '@/components/Prism';
+import { GridScan } from '@/components/GridScan';
 import PrismFallback from '@/components/PrismFallback';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode; fallback: React.ReactNode }, { hasError: boolean }> {
@@ -17,7 +17,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode; fallbac
   }
 }
 
-export default function SafePrism({ onBackgroundColor }: { onBackgroundColor?: (color: { r: number; g: number; b: number }) => void }) {
+export default function SafeGridScan() {
   const [hasError, setHasError] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -42,22 +42,18 @@ export default function SafePrism({ onBackgroundColor }: { onBackgroundColor?: (
 
   return (
     <ErrorBoundary fallback={<PrismFallback />}>
-      <Prism
-        animationType="hover"
-        timeScale={0.55}
-        height={3.5}
-        baseWidth={5.5}
-        scale={isMobile ? 2.5 : 3.2}
-        hueShift={0.35}
-        colorFrequency={2.2}
-        noise={0.02}
-        glow={isMobile ? 1.5 : 1.8}
-        bloom={isMobile ? 1.1 : 1.5}
-        hoverStrength={isMobile ? 1.5 : 2.5}
-        inertia={0.06}
-        transparent={true}
-        maxDpr={isMobile ? 1.25 : 2}
-        onBackgroundColor={onBackgroundColor}
+      <GridScan
+        sensitivity={0.55}
+        lineThickness={1}
+        linesColor="#bedf2a"
+        gridScale={0.09}
+        scanColor="#dd81df"
+        scanOpacity={0.4}
+        enablePost
+        bloomIntensity={0.6}
+        chromaticAberration={0.002}
+        noiseIntensity={0.01}
+        lineJitter={0.04}
       />
     </ErrorBoundary>
   );

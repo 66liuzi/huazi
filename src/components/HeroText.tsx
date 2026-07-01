@@ -21,12 +21,14 @@ const item: Variants = {
   },
 };
 
-export default function HeroText() {
+interface HeroTextProps {
+  bgColor?: { r: number; g: number; b: number };
+}
+
+export default function HeroText({ bgColor = { r: 9, g: 9, b: 11 } }: HeroTextProps) {
   const [ready, setReady] = useState(false);
 
-  // Delay entrance to sync with Prism WebGL background loading
   useEffect(() => {
-    // Wait for JS bundle execution + small buffer for WebGL canvas to paint first frame
     const t = setTimeout(() => setReady(true), 350);
     return () => clearTimeout(t);
   }, []);
@@ -34,6 +36,26 @@ export default function HeroText() {
   const scrollToPortfolio = () => {
     smoothScrollTo('#portfolio-section');
   };
+
+  // Compute inverse color: text = 255 - background for each channel
+  const invR = 255 - bgColor.r;
+  const invG = 255 - bgColor.g;
+  const invB = 255 - bgColor.b;
+
+  // Boost contrast: if inverse is near middle-gray (too close to background), push toward extremes
+  const lum = 0.2126 * invR + 0.7152 * invG + 0.0722 * invB;
+  let cr = invR, cg = invG, cb = invB;
+  if (lum > 100 && lum < 155) {
+    // Middle gray zone — push lighter (toward white)
+    const push = (155 - lum) / 55;
+    cr = Math.min(255, invR + push * 60);
+    cg = Math.min(255, invG + push * 60);
+    cb = Math.min(255, invB + push * 60);
+  }
+
+  const textColor = `rgb(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)})`;
+  // Slightly dimmer version for smaller text (subtitle)
+  const subColor = `rgba(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)},0.75)`;
 
   if (!ready) return null;
 
@@ -49,10 +71,9 @@ export default function HeroText() {
         variants={item}
         className="text-[0.7rem] sm:text-sm tracking-[0.3em] uppercase mb-4 sm:mb-6 -translate-y-10 sm:-translate-y-16"
         style={{
-          color: '#ffffff',
-          mixBlendMode: 'difference' as React.CSSProperties['mixBlendMode'],
-          WebkitTextStroke: '0.6px rgba(255,255,255,0.25)',
-          textShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 25px rgba(255,255,255,0.2)',
+          color: textColor,
+          transition: 'color 0.3s ease',
+          WebkitTextStroke: `0.6px ${subColor}`,
         }}
       >
         HELLO
@@ -65,10 +86,9 @@ export default function HeroText() {
       >
         <span
           style={{
-            color: '#ffffff',
-            mixBlendMode: 'difference' as React.CSSProperties['mixBlendMode'],
-            WebkitTextStroke: '0.8px rgba(255,255,255,0.2)',
-            textShadow: '0 0 12px rgba(255,255,255,0.35), 0 0 30px rgba(255,255,255,0.15)',
+            color: textColor,
+            transition: 'color 0.3s ease',
+            WebkitTextStroke: `0.8px ${subColor}`,
           }}
         >
           刘洋华子
@@ -78,7 +98,11 @@ export default function HeroText() {
       {/* Subtitle line 1 */}
       <motion.p
         variants={item}
-        className="text-xs sm:text-sm md:text-base text-slate-400 font-light mb-3 sm:mb-4 font-[family-name:var(--font-cinzel)] tracking-wide px-2"
+        className="text-xs sm:text-sm md:text-base font-light mb-3 sm:mb-4 font-[family-name:var(--font-cinzel)] tracking-wide px-2"
+        style={{
+          color: subColor,
+          transition: 'color 0.3s ease',
+        }}
       >
         Filmmaker / Editor / Visual Creator
       </motion.p>
@@ -86,7 +110,11 @@ export default function HeroText() {
       {/* Subtitle line 2 */}
       <motion.p
         variants={item}
-        className="text-[0.7rem] sm:text-sm md:text-base text-slate-500 max-w-[18rem] sm:max-w-lg mx-auto mb-8 sm:mb-12 px-2"
+        className="text-[0.7rem] sm:text-sm md:text-base max-w-[18rem] sm:max-w-lg mx-auto mb-8 sm:mb-12 px-2"
+        style={{
+          color: subColor,
+          transition: 'color 0.3s ease',
+        }}
       >
         Creating cinematic visual experiences with motion, sound and emotion.
       </motion.p>
@@ -96,12 +124,16 @@ export default function HeroText() {
         <button
           onClick={scrollToPortfolio}
           className="relative inline-flex items-center justify-center gap-3 sm:gap-5 px-8 sm:px-12 md:px-16 py-4 sm:py-5
-                     text-white font-light text-sm sm:text-base md:text-lg tracking-[0.12em] sm:tracking-[0.15em]
+                     font-light text-sm sm:text-base md:text-lg tracking-[0.12em] sm:tracking-[0.15em]
                      transition-all duration-500 active:scale-95 sm:hover:scale-105
-                     border border-white/15 sm:hover:border-cyan-400/50 rounded-full
-                     shadow-[0_0_30px_rgba(34,211,238,0.08)] sm:hover:shadow-[0_0_60px_rgba(34,211,238,0.25)]"
+                     rounded-full"
           style={{
-            background: 'rgba(255,255,255,0.06)',
+            color: textColor,
+            borderColor: `${subColor.replace('0.75', '0.2')}`,
+            borderWidth: 1,
+            borderStyle: 'solid',
+            background: `rgba(${cr},${cg},${cb},0.06)`,
+            transition: 'color 0.3s ease, border-color 0.3s ease, background 0.3s ease',
           }}
         >
           <span className="whitespace-nowrap">查看作品集</span>
