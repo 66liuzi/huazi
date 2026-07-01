@@ -182,7 +182,7 @@ const Prism = ({
           wob = mat2(c0, c1, c2, c0);
         }
 
-        const int STEPS = 100;
+        const int STEPS = 80;
         for (int i = 0; i < STEPS; i++) {
           p = vec3(f, z);
           p.xz = p.xz * wob;
@@ -207,6 +207,13 @@ const Prism = ({
         if(abs(uHueShift) > 0.0001){
           col = clamp(hueRotation(uHueShift) * col, 0.0, 1.0);
         }
+
+        // Subtle brightness variation — barely perceptible
+        float breathe = 1.0 + 0.06 * (
+          sin(iTime * uTimeScale * 0.37 + 0.7) *
+          cos(iTime * uTimeScale * 0.53 - 0.3)
+        );
+        col = clamp(col * breathe, 0.0, 1.0);
 
         gl_FragColor = vec4(col, o.a);
       }
@@ -352,7 +359,7 @@ const Prism = ({
       window.addEventListener('pointermove', onPointerMove, { passive: true });
       window.addEventListener('mouseleave', onLeave);
       window.addEventListener('blur', onBlur);
-      program.uniforms.uUseBaseWobble.value = 0;
+      program.uniforms.uUseBaseWobble.value = 1;
     } else if (animationType === '3drotate') {
       program.uniforms.uUseBaseWobble.value = 0;
     } else {
@@ -366,21 +373,28 @@ const Prism = ({
       let continueRAF = true;
 
       if (animationType === 'hover') {
+        // Autonomous base rotation — vertical (pitch) dominant with multi-octave random motion
+        const autoYaw   = Math.sin(time * 0.28) * 0.08;
+        const autoPitch = Math.sin(time * 0.42 + 1.1) * 0.25
+                        + Math.cos(time * 0.73 + 3.4) * 0.15
+                        + Math.sin(time * 0.31 + 5.2) * 0.10;
+        const autoRoll  = Math.sin(time * 0.22 + 2.8) * 0.08;
+
         const maxPitch = 0.6 * HOVSTR;
         const maxYaw = 0.6 * HOVSTR;
-        targetYaw = (pointer.inside ? -pointer.x : 0) * maxYaw;
-        targetPitch = (pointer.inside ? pointer.y : 0) * maxPitch;
+        targetYaw = autoYaw + (pointer.inside ? -pointer.x : 0) * maxYaw;
+        targetPitch = autoPitch + (pointer.inside ? pointer.y : 0) * maxPitch;
         const prevYaw = yaw;
         const prevPitch = pitch;
         const prevRoll = roll;
         yaw = lerp(prevYaw, targetYaw, INERT);
         pitch = lerp(prevPitch, targetPitch, INERT);
-        roll = lerp(prevRoll, 0, 0.1);
+        roll = lerp(prevRoll, autoRoll, 0.1);
         program.uniforms.uRot.value = setMat3FromEuler(yaw, pitch, roll, rotBuf);
 
         if (NOISE_IS_ZERO) {
           const settled =
-            Math.abs(yaw - targetYaw) < 1e-4 && Math.abs(pitch - targetPitch) < 1e-4 && Math.abs(roll) < 1e-4;
+            Math.abs(yaw - targetYaw) < 1e-4 && Math.abs(pitch - targetPitch) < 1e-4 && Math.abs(roll - autoRoll) < 1e-4;
           if (settled) continueRAF = false;
         }
       } else if (animationType === '3drotate') {
