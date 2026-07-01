@@ -386,6 +386,7 @@ const VideoCardItem = ({
   onEnter,
   onLeave,
   onClick,
+  dragMovedRef,
 }: {
   card: VideoCard & { cardW: number; cardH: number };
   panelColor: string;
@@ -394,15 +395,21 @@ const VideoCardItem = ({
   onEnter: () => void;
   onLeave: () => void;
   onClick: () => void;
+  dragMovedRef?: React.MutableRefObject<boolean>;
 }) => {
   const [imgError, setImgError] = useState(false);
+
+  const handleClick = () => {
+    if (dragMovedRef?.current) return; // suppress click after drag
+    onClick();
+  };
 
   return (
     <div
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      onClick={onClick}
-      className="flex-shrink-0 rounded-xl border overflow-hidden cursor-pointer"
+      onClick={isTouch ? handleClick : undefined}
+      className="flex-shrink-0 rounded-xl border overflow-hidden"
       style={{
         width: card.cardW,
         maxWidth: '55vw',
@@ -412,6 +419,8 @@ const VideoCardItem = ({
         opacity: isActive || !isTouch ? 1 : 0.85,
         position: 'relative',
         transition: 'border-color 0.15s, opacity 0.15s',
+        cursor: isTouch ? 'pointer' : 'grab',
+        userSelect: 'none',
       }}
     >
       {card.poster && !imgError ? (
@@ -422,17 +431,31 @@ const VideoCardItem = ({
           loading="eager"
           referrerPolicy="no-referrer"
           onError={() => setImgError(true)}
-          style={{ transform: 'translateZ(0)' }}
+          style={{ transform: 'translateZ(0)', pointerEvents: 'none' }}
         />
       ) : (
         <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${card.gradient}, #0a0a0f)` }} />
       )}
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-2.5" style={{ zIndex: 2 }}>
-        <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center mb-2">
-          <svg className="w-4 h-4 text-white/60 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5.14v14l11-7-11-7z" />
-          </svg>
-        </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-2.5" style={{ zIndex: 2, pointerEvents: 'none' }}>
+        {/* Play button — clickable on desktop, decorative on touch */}
+        {isTouch ? (
+          <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center mb-2">
+            <svg className="w-4 h-4 text-white/60 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5.14v14l11-7-11-7z" />
+            </svg>
+          </div>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleClick(); }}
+            className="w-10 h-10 rounded-full bg-white/15 border border-white/20 flex items-center justify-center mb-2 transition-all hover:bg-white/30 hover:scale-110 active:scale-95"
+            style={{ cursor: 'pointer', pointerEvents: 'auto', backdropFilter: 'blur(4px)' }}
+            aria-label={`Play ${card.title}`}
+          >
+            <svg className="w-4 h-4 text-white/80 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5.14v14l11-7-11-7z" />
+            </svg>
+          </button>
+        )}
         <span className="text-white/45 text-[10px] font-medium tracking-wider">{String(card.id).padStart(2, '0')}</span>
         <span className="text-white/65 text-[10px] mt-0.5 text-center leading-tight px-1" style={{ opacity: isActive ? 1 : 0, transition: 'opacity 0.15s' }}>
           {card.title}
@@ -457,6 +480,10 @@ function VideoGallery({
   const [active, setActive] = useState<number | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // Mouse drag-to-scroll state (desktop only)
+  const dragState = useRef({ startX: 0, startScroll: 0, isDragging: false });
+  const dragMovedRef = useRef(false);
 
   const cards = panel.cards || [];
   const hasMultiple = cards.length > 1;
@@ -494,6 +521,41 @@ function VideoGallery({
       : 200;
     el.scrollBy({ left: dir * avgStep, behavior: 'smooth' });
   }, [sizedCards, GAP]);
+
+  // === Mouse drag-to-scroll handlers (desktop only) ===
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isTouch) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    dragState.current = {
+      startX: e.pageX,
+      startScroll: el.scrollLeft,
+      isDragging: true,
+    };
+    dragMovedRef.current = false;
+  }, [isTouch]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragState.current.isDragging) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const delta = e.pageX - dragState.current.startX;
+    if (Math.abs(delta) > 5) {
+      dragMovedRef.current = true;
+      el.style.cursor = 'grabbing';
+    }
+    el.scrollLeft = dragState.current.startScroll - delta;
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    if (dragState.current.isDragging) {
+      dragState.current.isDragging = false;
+      const el = scrollRef.current;
+      if (el) el.style.cursor = '';
+      // Keep dragMovedRef true briefly so click handlers can check it
+      setTimeout(() => { dragMovedRef.current = false; }, 100);
+    }
+  }, []);
 
   // Single card centered
   if (!hasMultiple) {
@@ -564,14 +626,20 @@ function VideoGallery({
           </>
         )}
 
-        {/* Pure native horizontal scroll — no JS interference */}
+        {/* Pure native horizontal scroll — mouse drag on desktop, touch on mobile */}
         <div
           ref={scrollRef}
           onScroll={checkScrollPos}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
           className="flex items-center gap-3.5 px-4 overflow-x-auto scrollbar-hide"
           style={{
             height: CARD_H + 8,
             WebkitOverflowScrolling: 'touch',
+            cursor: isTouch ? 'default' : 'grab',
+            userSelect: 'none',
           }}
         >
           {sizedCards.map((c) => {
@@ -586,6 +654,7 @@ function VideoGallery({
                 onEnter={() => setActive(c.id)}
                 onLeave={() => setActive(null)}
                 onClick={() => onCardClick?.(c)}
+                dragMovedRef={dragMovedRef}
               />
             );
           })}
