@@ -113,10 +113,10 @@ export default function PortfolioGrid({ panels, onVideoClick }: Props) {
     <div className="relative w-full">
       {/* === Collapsed Grid — NEVER reflows === */}
       <div
-        className={`grid gap-2.5 md:gap-3 w-full ${isTouch ? 'grid-cols-2' : 'grid-cols-4'}`}
+        className={`grid gap-3 md:gap-4 w-full ${isTouch ? 'grid-cols-2' : 'grid-cols-4'}`}
         style={{
-          height: isTouch ? 'auto' : 'min(58vh, 520px)',
-          minHeight: isTouch ? 'auto' : '380px',
+          height: isTouch ? 'auto' : 'min(68vh, 620px)',
+          minHeight: isTouch ? 'auto' : '420px',
         }}
       >
         {panels.map(panel => (
@@ -225,7 +225,7 @@ function CollapsedPanel({
         transition: 'opacity 0.2s ease, transform 0.2s ease',
         background: 'linear-gradient(135deg, rgba(20,20,30,0.92), rgba(15,15,25,0.92))',
         border: `1px solid ${panel.color1}20`,
-        minHeight: isTouch ? '148px' : '100%',
+        minHeight: isTouch ? '170px' : '100%',
         height: isTouch ? 'auto' : '100%',
         willChange: 'opacity, transform',
       }}
@@ -322,7 +322,7 @@ function ExpandedOverlay({
           onClick={onClose}
         >
           <motion.div
-            className="w-full max-w-sm rounded-2xl flex flex-col overflow-hidden"
+            className="w-full max-w-md rounded-2xl flex flex-col overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, rgba(20,20,30,0.98), rgba(15,15,25,0.98))',
               border: `1px solid ${panel.color1}40`,
@@ -345,32 +345,34 @@ function ExpandedOverlay({
     );
   }
 
-  // Desktop: absolute overlay — height fits content, no forced stretch
+  // Desktop: absolute overlay — centered vertically in grid area, height fits content
   return (
     <>
       <div className="fixed inset-0 z-20" onClick={onClose} style={{ cursor: 'default' }} />
-      <motion.div
-        className="absolute top-0 left-0 right-0 z-30 rounded-2xl overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, rgba(20,20,30,0.96), rgba(15,15,25,0.96))',
-          border: `1px solid ${panel.color1}40`,
-          boxShadow: `0 0 80px ${panel.color1}15`,
-          willChange: 'opacity',
-        }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ExpandedContent
-          panel={panel}
-          onClose={onClose}
-          onVideoClick={onVideoClick}
-          onImageClick={onImageClick}
-          isTouch={isTouch}
-        />
-      </motion.div>
+      <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+        <motion.div
+          className="w-full rounded-2xl overflow-hidden pointer-events-auto"
+          style={{
+            background: 'linear-gradient(135deg, rgba(20,20,30,0.96), rgba(15,15,25,0.96))',
+            border: `1px solid ${panel.color1}40`,
+            boxShadow: `0 0 80px ${panel.color1}15`,
+            willChange: 'opacity',
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExpandedContent
+            panel={panel}
+            onClose={onClose}
+            onVideoClick={onVideoClick}
+            onImageClick={onImageClick}
+            isTouch={isTouch}
+          />
+        </motion.div>
+      </div>
     </>
   );
 }
@@ -390,7 +392,7 @@ function ExpandedContent({
   isTouch: boolean;
 }) {
   return (
-    <div className="w-full flex flex-col relative" style={{ maxHeight: isTouch ? '52vh' : '100%' }}>
+    <div className="w-full flex flex-col relative" style={{ maxHeight: isTouch ? '58vh' : '100%' }}>
       {/* Desktop close button inside the panel */}
       {!isTouch && (
         <button
@@ -548,9 +550,9 @@ function VideoGallery({
   const cards = panel.cards || [];
   const hasMultiple = cards.length > 1;
 
-  const CARD_H = isTouch ? 170 : 190;
-  const CARD_MIN_W = 130;
-  const CARD_MAX_W = 340;
+  const CARD_H = isTouch ? 185 : 215;
+  const CARD_MIN_W = 140;
+  const CARD_MAX_W = 360;
   const GAP = 14;
 
   const sizedCards = useMemo(() => cards.map(c => {
