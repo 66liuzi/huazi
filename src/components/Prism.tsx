@@ -21,6 +21,7 @@ interface PrismProps {
   suspendWhenOffscreen?: boolean;
   timeScale?: number;
   maxDpr?: number;
+  onBackgroundColor?: (color: { r: number; g: number; b: number }) => void;
 }
 
 const Prism = ({
@@ -40,6 +41,7 @@ const Prism = ({
   suspendWhenOffscreen = false,
   timeScale = 0.5,
   maxDpr = 2,
+  onBackgroundColor,
 }: PrismProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +69,11 @@ const Prism = ({
     const INERT = Math.max(0, Math.min(1, inertia || 0.12));
 
     const dpr = Math.min(maxDpr, window.devicePixelRatio || 1);
-    const renderer = new Renderer({ dpr, alpha: transparent, antialias: false });
+    const renderer = new Renderer({
+      dpr,
+      alpha: transparent,
+      antialias: false
+    });
     const gl = renderer.gl;
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
@@ -78,7 +84,7 @@ const Prism = ({
       inset: '0',
       width: '100%',
       height: '100%',
-      display: 'block',
+      display: 'block'
     });
     container.appendChild(gl.canvas);
 
@@ -176,7 +182,7 @@ const Prism = ({
           wob = mat2(c0, c1, c2, c0);
         }
 
-        const int STEPS = 80;
+        const int STEPS = 100;
         for (int i = 0; i < STEPS; i++) {
           p = vec3(f, z);
           p.xz = p.xz * wob;
@@ -201,13 +207,6 @@ const Prism = ({
         if(abs(uHueShift) > 0.0001){
           col = clamp(hueRotation(uHueShift) * col, 0.0, 1.0);
         }
-
-        // Subtle brightness variation — barely perceptible
-        float breathe = 1.0 + 0.06 * (
-          sin(iTime * uTimeScale * 0.37 + 0.7) *
-          cos(iTime * uTimeScale * 0.53 - 0.3)
-        );
-        col = clamp(col * breathe, 0.0, 1.0);
 
         gl_FragColor = vec4(col, o.a);
       }
@@ -239,9 +238,11 @@ const Prism = ({
         uInvBaseHalf: { value: 1 / BASE_HALF },
         uInvHeight: { value: 1 / H },
         uMinAxis: { value: Math.min(BASE_HALF, H) },
-        uPxScale: { value: 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE) },
-        uTimeScale: { value: TS },
-      },
+        uPxScale: {
+          value: 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE)
+        },
+        uTimeScale: { value: TS }
+      }
     });
     const mesh = new Mesh(gl, { geometry, program });
 
@@ -261,27 +262,43 @@ const Prism = ({
 
     const rotBuf = new Float32Array(9);
     const setMat3FromEuler = (yawY: number, pitchX: number, rollZ: number, out: Float32Array) => {
-      const cy = Math.cos(yawY), sy = Math.sin(yawY);
-      const cx = Math.cos(pitchX), sx = Math.sin(pitchX);
-      const cz = Math.cos(rollZ), sz = Math.sin(rollZ);
+      const cy = Math.cos(yawY),
+        sy = Math.sin(yawY);
+      const cx = Math.cos(pitchX),
+        sx = Math.sin(pitchX);
+      const cz = Math.cos(rollZ),
+        sz = Math.sin(rollZ);
       const r00 = cy * cz + sy * sx * sz;
       const r01 = -cy * sz + sy * sx * cz;
       const r02 = sy * cx;
+
       const r10 = cx * sz;
       const r11 = cx * cz;
       const r12 = -sx;
+
       const r20 = -sy * cz + cy * sx * sz;
       const r21 = sy * sz + cy * sx * cz;
       const r22 = cy * cx;
-      out[0] = r00; out[1] = r10; out[2] = r20;
-      out[3] = r01; out[4] = r11; out[5] = r21;
-      out[6] = r02; out[7] = r12; out[8] = r22;
+
+      out[0] = r00;
+      out[1] = r10;
+      out[2] = r20;
+      out[3] = r01;
+      out[4] = r11;
+      out[5] = r21;
+      out[6] = r02;
+      out[7] = r12;
+      out[8] = r22;
       return out;
     };
 
     const NOISE_IS_ZERO = NOISE < 1e-6;
     let raf = 0;
     const t0 = performance.now();
+
+    // Background color sampling for dynamic text contrast
+    const pixelBuf = new Uint8Array(4);
+    let sampleFrame = 0;
 
     const startRAF = () => {
       if (raf) return;
@@ -300,12 +317,15 @@ const Prism = ({
     const phX = rnd() * Math.PI * 2;
     const phZ = rnd() * Math.PI * 2;
 
-    let yaw = 0, pitch = 0, roll = 0;
-    let targetYaw = 0, targetPitch = 0;
+    let yaw = 0,
+      pitch = 0,
+      roll = 0;
+    let targetYaw = 0,
+      targetPitch = 0;
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
     const pointer = { x: 0, y: 0, inside: true };
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       const ww = Math.max(1, window.innerWidth);
       const wh = Math.max(1, window.innerHeight);
       const cx = ww * 0.5;
@@ -316,8 +336,12 @@ const Prism = ({
       pointer.y = Math.max(-1, Math.min(1, ny));
       pointer.inside = true;
     };
-    const onLeave = () => { pointer.inside = false; };
-    const onBlur = () => { pointer.inside = false; };
+    const onLeave = () => {
+      pointer.inside = false;
+    };
+    const onBlur = () => {
+      pointer.inside = false;
+    };
 
     let onPointerMove: ((e: PointerEvent) => void) | null = null;
     if (animationType === 'hover') {
@@ -328,7 +352,7 @@ const Prism = ({
       window.addEventListener('pointermove', onPointerMove, { passive: true });
       window.addEventListener('mouseleave', onLeave);
       window.addEventListener('blur', onBlur);
-      program.uniforms.uUseBaseWobble.value = 1;
+      program.uniforms.uUseBaseWobble.value = 0;
     } else if (animationType === '3drotate') {
       program.uniforms.uUseBaseWobble.value = 0;
     } else {
@@ -342,28 +366,21 @@ const Prism = ({
       let continueRAF = true;
 
       if (animationType === 'hover') {
-        // Autonomous base rotation — vertical (pitch) dominant with multi-octave random motion
-        const autoYaw   = Math.sin(time * 0.28) * 0.08;
-        const autoPitch = Math.sin(time * 0.42 + 1.1) * 0.25
-                        + Math.cos(time * 0.73 + 3.4) * 0.15
-                        + Math.sin(time * 0.31 + 5.2) * 0.10;
-        const autoRoll  = Math.sin(time * 0.22 + 2.8) * 0.08;
-
         const maxPitch = 0.6 * HOVSTR;
         const maxYaw = 0.6 * HOVSTR;
-        targetYaw = autoYaw + (pointer.inside ? -pointer.x : 0) * maxYaw;
-        targetPitch = autoPitch + (pointer.inside ? pointer.y : 0) * maxPitch;
+        targetYaw = (pointer.inside ? -pointer.x : 0) * maxYaw;
+        targetPitch = (pointer.inside ? pointer.y : 0) * maxPitch;
         const prevYaw = yaw;
         const prevPitch = pitch;
         const prevRoll = roll;
         yaw = lerp(prevYaw, targetYaw, INERT);
         pitch = lerp(prevPitch, targetPitch, INERT);
-        roll = lerp(prevRoll, autoRoll, 0.1);
+        roll = lerp(prevRoll, 0, 0.1);
         program.uniforms.uRot.value = setMat3FromEuler(yaw, pitch, roll, rotBuf);
 
         if (NOISE_IS_ZERO) {
           const settled =
-            Math.abs(yaw - targetYaw) < 1e-4 && Math.abs(pitch - targetPitch) < 1e-4 && Math.abs(roll - autoRoll) < 1e-4;
+            Math.abs(yaw - targetYaw) < 1e-4 && Math.abs(pitch - targetPitch) < 1e-4 && Math.abs(roll) < 1e-4;
           if (settled) continueRAF = false;
         }
       } else if (animationType === '3drotate') {
@@ -374,14 +391,30 @@ const Prism = ({
         program.uniforms.uRot.value = setMat3FromEuler(yaw, pitch, roll, rotBuf);
         if (TS < 1e-6) continueRAF = false;
       } else {
-        rotBuf[0] = 1; rotBuf[1] = 0; rotBuf[2] = 0;
-        rotBuf[3] = 0; rotBuf[4] = 1; rotBuf[5] = 0;
-        rotBuf[6] = 0; rotBuf[7] = 0; rotBuf[8] = 1;
+        rotBuf[0] = 1;
+        rotBuf[1] = 0;
+        rotBuf[2] = 0;
+        rotBuf[3] = 0;
+        rotBuf[4] = 1;
+        rotBuf[5] = 0;
+        rotBuf[6] = 0;
+        rotBuf[7] = 0;
+        rotBuf[8] = 1;
         program.uniforms.uRot.value = rotBuf;
         if (TS < 1e-6) continueRAF = false;
       }
 
       renderer.render({ scene: mesh });
+
+      // Sample center background color for text contrast (every 6 frames, ~10Hz at 60fps)
+      if (onBackgroundColor && sampleFrame % 6 === 0) {
+        const cx = Math.floor(gl.drawingBufferWidth / 2);
+        const cy = Math.floor(gl.drawingBufferHeight / 2);
+        gl.readPixels(cx, cy, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuf);
+        onBackgroundColor({ r: pixelBuf[0], g: pixelBuf[1], b: pixelBuf[2] });
+      }
+      sampleFrame++;
+
       if (continueRAF) {
         raf = requestAnimationFrame(render);
       } else {
@@ -417,13 +450,30 @@ const Prism = ({
       }
       window.removeEventListener('mouseleave', onLeave);
       window.removeEventListener('blur', onBlur);
+      if (suspendWhenOffscreen) {
+        // IntersectionObserver cleanup if used
+      }
       if (gl.canvas.parentElement === container) container.removeChild(gl.canvas);
     };
   }, [
-    height, baseWidth, animationType, glow, noise,
-    offset?.x, offset?.y, scale, transparent, hueShift,
-    colorFrequency, timeScale, hoverStrength, inertia,
-    bloom, suspendWhenOffscreen,
+    height,
+    baseWidth,
+    animationType,
+    glow,
+    noise,
+    offset?.x,
+    offset?.y,
+    scale,
+    transparent,
+    hueShift,
+    colorFrequency,
+    timeScale,
+    hoverStrength,
+    inertia,
+    bloom,
+    suspendWhenOffscreen,
+    maxDpr,
+    onBackgroundColor,
   ]);
 
   return <div className="prism-container" ref={containerRef} />;
