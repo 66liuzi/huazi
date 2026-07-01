@@ -12,7 +12,7 @@ interface VideoViewerProps {
 
 export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoViewerProps) {
   const [showVideo, setShowVideo] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -25,7 +25,6 @@ export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoV
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
-      // Delay video load until overlay fade-in completes
       const t = setTimeout(() => setShowVideo(true), 200);
       return () => {
         clearTimeout(t);
@@ -43,9 +42,18 @@ export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoV
   useEffect(() => {
     if (!isOpen) {
       setShowVideo(false);
-      setIsMuted(true);
     }
   }, [isOpen]);
+
+  // Auto-unmute: start muted for autoplay, then unmute as soon as playback begins
+  // The user's click to open counts as a user gesture, so browsers allow this
+  const handleAutoUnmute = useCallback(() => {
+    const v = videoRef.current;
+    if (v) {
+      v.muted = false;
+      v.volume = 1;
+    }
+  }, []);
 
   return (
     <AnimatePresence>
@@ -102,36 +110,19 @@ export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoV
                   style={{ aspectRatio: '16/9', background: '#0a0a0a' }}
                 >
                   {showVideo && videoSrc ? (
-                    <>
-                      <video
-                        src={videoSrc}
-                        className="w-full h-full object-cover"
-                        controls
-                        autoPlay
-                        muted={isMuted}
-                        playsInline
-                        loop
-                        preload="auto"
-                        onClick={() => setIsMuted(m => !m)}
-                      />
-                      {/* Muted indicator — click to unmute */}
-                      {isMuted && (
-                        <div
-                          className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full pointer-events-none"
-                          style={{
-                            background: 'rgba(0,0,0,0.6)',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            animation: 'pulse 2s ease-in-out infinite',
-                          }}
-                        >
-                          <svg className="w-4 h-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.25 9.75L19.5 7.5M17.25 14.25L19.5 16.5M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3l18 18" />
-                          </svg>
-                          <span className="text-white/70 text-[11px] font-medium">点击取消静音</span>
-                        </div>
-                      )}
-                    </>
+                    <video
+                      ref={videoRef}
+                      src={videoSrc}
+                      className="w-full h-full object-cover"
+                      controls
+                      autoPlay
+                      muted
+                      playsInline
+                      loop
+                      preload="auto"
+                      onPlay={handleAutoUnmute}
+                      onLoadedData={handleAutoUnmute}
+                    />
                   ) : videoSrc ? (
                     <div className="w-full h-full flex items-center justify-center">
                       <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
