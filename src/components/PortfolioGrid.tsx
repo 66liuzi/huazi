@@ -109,9 +109,7 @@ export default function PortfolioGrid({ panels, onVideoClick }: Props) {
   const activePanel = panels.find(p => p.id === activeId);
 
   return (
-    <div
-      className="relative w-full"
-    >
+    <div className="relative w-full">
       {/* === Collapsed Grid — NEVER reflows === */}
       <div
         className={`grid gap-2.5 md:gap-3 w-full ${isTouch ? 'grid-cols-2' : 'grid-cols-4'}`}
@@ -147,7 +145,7 @@ export default function PortfolioGrid({ panels, onVideoClick }: Props) {
   );
 }
 
-// === Collapsed Panel (lightweight, static) ===
+// === Collapsed Panel ===
 function CollapsedPanel({
   panel,
   isHidden,
@@ -191,7 +189,6 @@ function CollapsedPanel({
           {panel.type === 'image' ? `${cardCount || 1} 张` : `${cardCount} 个作品`}
         </span>
 
-        {/* Mini preview thumbnails — desktop only */}
         {!isTouch && panel.type === 'video' && panel.cards && panel.cards.length > 0 && (
           <div className="mt-1 flex -space-x-1.5">
             {panel.cards.slice(0, 3).map(c => (
@@ -210,7 +207,6 @@ function CollapsedPanel({
           </div>
         )}
 
-        {/* Sound wave decoration */}
         {!isTouch && panel.type === 'sound' && (
           <div className="mt-1 flex items-end gap-0.5 h-4">
             {[0.3, 0.6, 0.9, 0.6, 0.3].map((h, i) => (
@@ -245,22 +241,22 @@ function ExpandedOverlay({
   isTouch: boolean;
 }) {
   if (isTouch) {
-    // Mobile: centered modal — NOT full screen
+    // Mobile: compact centered modal — just header + cards + footer
     return (
       <>
         {/* Backdrop */}
         <motion.div
           className="fixed inset-0 z-40"
-          style={{ background: 'rgba(0,0,0,0.85)' }}
+          style={{ background: 'rgba(0,0,0,0.88)' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={onClose}
         />
-        {/* Modal panel — centered, compact, NOT full screen */}
+        {/* Modal panel — compact, auto height based on content */}
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -268,12 +264,11 @@ function ExpandedOverlay({
           onClick={onClose}
         >
           <motion.div
-            className="w-full max-w-sm rounded-2xl flex flex-col"
+            className="w-full max-w-sm rounded-2xl flex flex-col overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, rgba(20,20,30,0.97), rgba(15,15,25,0.97))',
+              background: 'linear-gradient(135deg, rgba(20,20,30,0.98), rgba(15,15,25,0.98))',
               border: `1px solid ${panel.color1}40`,
               boxShadow: `0 0 60px ${panel.color1}20`,
-              maxHeight: '62vh',
               willChange: 'opacity',
             }}
             onClick={(e) => e.stopPropagation()}
@@ -286,7 +281,6 @@ function ExpandedOverlay({
             />
           </motion.div>
         </motion.div>
-        {/* Close button — OUTSIDE modal, always on top, never clipped */}
         <CloseButton color={panel.color1} onClose={onClose} />
       </>
     );
@@ -336,7 +330,7 @@ function ExpandedContent({
   isTouch: boolean;
 }) {
   return (
-    <div className="w-full h-full flex flex-col relative">
+    <div className="w-full flex flex-col relative" style={{ maxHeight: isTouch ? '52vh' : '100%' }}>
       {/* Desktop close button inside the panel */}
       {!isTouch && (
         <button
@@ -355,37 +349,35 @@ function ExpandedContent({
         </button>
       )}
 
-      {/* Label header */}
-      <div className="px-5 md:px-7 pt-4 md:pt-5 pb-1 pointer-events-none flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <PanelIcon type={panel.icon} className="w-4 h-4" style={{ color: panel.color1 }} />
-          <span className="text-xs md:text-sm font-medium tracking-[0.2em] uppercase" style={{ color: panel.color1 }}>
+      {/* Label header — compact */}
+      <div className="px-5 pt-3.5 pb-1.5 pointer-events-none flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <PanelIcon type={panel.icon} className="w-3.5 h-3.5" style={{ color: panel.color1 }} />
+          <span className="text-[11px] font-medium tracking-[0.18em] uppercase" style={{ color: panel.color1 }}>
             {panel.labelEn}
           </span>
         </div>
-        <h3 className="text-base md:text-lg font-medium text-white/85 mt-1">{panel.label}</h3>
+        <h3 className="text-sm font-medium text-white/85 mt-0.5">{panel.label}</h3>
       </div>
 
-      {/* Content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        {panel.type === 'image' ? (
-          <ImageContent panel={panel} />
-        ) : (
-          <VideoGallery
-            panel={panel}
-            onCardClick={(card) => {
-              onClose();
-              onVideoClick?.(card);
-            }}
-            isTouch={isTouch}
-          />
-        )}
-      </div>
+      {/* Content area — no overflow wrapper, let inner scroll handle natively */}
+      {panel.type === 'image' ? (
+        <ImageContent panel={panel} />
+      ) : (
+        <VideoGallery
+          panel={panel}
+          onCardClick={(card) => {
+            onClose();
+            onVideoClick?.(card);
+          }}
+          isTouch={isTouch}
+        />
+      )}
     </div>
   );
 }
 
-// === Video Card (individual, memoized for performance) ===
+// === Video Card ===
 const VideoCardItem = ({
   card,
   panelColor,
@@ -410,7 +402,7 @@ const VideoCardItem = ({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       onClick={onClick}
-      className="flex-shrink-0 rounded-xl border overflow-hidden cursor-pointer snap-center"
+      className="flex-shrink-0 rounded-xl border overflow-hidden cursor-pointer"
       style={{
         width: card.cardW,
         maxWidth: '55vw',
@@ -451,7 +443,7 @@ const VideoCardItem = ({
   );
 };
 
-// === Video Gallery ===
+// === Video Gallery — native scroll, NO infinite loop, NO rAF hacks ===
 function VideoGallery({
   panel,
   onCardClick,
@@ -463,14 +455,13 @@ function VideoGallery({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<number | null>(null);
-  const isResetting = useRef(false);
-  const lastResetTime = useRef(0);
-  const rafId = useRef<number | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
   const cards = panel.cards || [];
   const hasMultiple = cards.length > 1;
 
-  const CARD_H = isTouch ? 180 : 190;
+  const CARD_H = isTouch ? 170 : 190;
   const CARD_MIN_W = 130;
   const CARD_MAX_W = 340;
   const GAP = 14;
@@ -483,82 +474,33 @@ function VideoGallery({
     return { ...c, cardW, cardH: CARD_H };
   }), [cards, CARD_H]);
 
-  const oneSetWidth = sizedCards.reduce((s, it) => s + it.cardW + GAP, 0);
-
-  // 2x duplication for lighter DOM (was 3x)
-  const DOUBLE = useMemo(() => {
-    if (!hasMultiple) return sizedCards;
-    return [...sizedCards, ...sizedCards];
-  }, [sizedCards, hasMultiple]);
-
-  const doReset = useCallback((el: HTMLDivElement, offset: number) => {
-    const now = performance.now();
-    if (now - lastResetTime.current < 100) return;
-    lastResetTime.current = now;
-    isResetting.current = true;
-    el.scrollLeft += offset;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => { isResetting.current = false; });
-    });
-  }, []);
-
-  useEffect(() => {
-    if (hasMultiple && scrollRef.current) {
-      // Start at the beginning of the second set
-      scrollRef.current.scrollLeft = oneSetWidth;
-    }
-  }, [oneSetWidth, hasMultiple]);
-
-  // rAF-throttled scroll handler
-  const handleScroll = useCallback(() => {
-    if (!hasMultiple) return;
-    if (rafId.current !== null) return;
-    rafId.current = requestAnimationFrame(() => {
-      rafId.current = null;
-      const el = scrollRef.current;
-      if (!el || isResetting.current) return;
-
-      // Unified threshold: 25% of one set width
-      // This gives plenty of scroll room before a reset triggers
-      const maxScroll = el.scrollWidth - el.clientWidth;
-      const threshold = oneSetWidth * 0.25;
-
-      if (el.scrollLeft < threshold) {
-        doReset(el, oneSetWidth);
-      } else if (el.scrollLeft > maxScroll - threshold) {
-        doReset(el, -oneSetWidth);
-      }
-    });
-  }, [oneSetWidth, doReset, hasMultiple]);
-
-  // Cleanup rAF on unmount
-  useEffect(() => {
-    return () => {
-      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
-    };
-  }, []);
-
-  const scrollByAmount = useCallback((dir: 1 | -1) => {
-    if (!hasMultiple) return;
+  // Check scroll position for nav button visibility
+  const checkScrollPos = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const avgStep = oneSetWidth / cards.length;
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    const threshold = oneSetWidth * 0.25;
-    if (dir === 1 && el.scrollLeft > maxScroll - threshold) {
-      doReset(el, -oneSetWidth);
-    } else if (dir === -1 && el.scrollLeft < threshold) {
-      doReset(el, oneSetWidth);
-    }
+    setCanScrollLeft(el.scrollLeft > 5);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
+  }, []);
+
+  useEffect(() => {
+    checkScrollPos();
+  }, [checkScrollPos, sizedCards]);
+
+  const scrollByAmount = useCallback((dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const avgStep = sizedCards.length > 0
+      ? (sizedCards.reduce((s, it) => s + it.cardW + GAP, 0)) / sizedCards.length
+      : 200;
     el.scrollBy({ left: dir * avgStep, behavior: 'smooth' });
-  }, [cards.length, oneSetWidth, doReset, hasMultiple]);
+  }, [sizedCards, GAP]);
 
   // Single card centered
   if (!hasMultiple) {
     const c = sizedCards[0];
     if (!c) return null;
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center px-4">
+      <div className="w-full flex flex-col items-center justify-center px-4 py-3">
         <div
           className="rounded-xl overflow-hidden cursor-pointer relative group"
           style={{
@@ -583,86 +525,88 @@ function VideoGallery({
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-14 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)', zIndex: 1 }} />
         </div>
-        <span className="text-[11px] tracking-wider uppercase mt-3" style={{ color: `${panel.color1}60` }}>
-          {panel.type === 'sound' ? '1 track · Click to preview' : '1 work · Click to preview'}
+        <span className="text-[10px] tracking-wider uppercase mt-2.5" style={{ color: `${panel.color1}60` }}>
+          {panel.type === 'sound' ? '1 track · 点击预览' : '1 work · 点击预览'}
         </span>
       </div>
     );
   }
 
-  // Multiple cards — scrolling gallery
+  // Multiple cards — pure native scroll, no duplication, no reset
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="relative flex-1 min-h-0">
-        {/* Nav buttons — desktop only */}
+    <div className="w-full flex flex-col">
+      <div className="relative">
+        {/* Nav buttons — desktop only, fade based on scroll position */}
         {!isTouch && (
           <>
-            <button
-              onClick={(e) => { e.stopPropagation(); scrollByAmount(-1); }}
-              className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/8 transition-colors"
-              style={{ background: 'rgba(255,255,255,0.05)' }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); scrollByAmount(1); }}
-              className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/8 transition-colors"
-              style={{ background: 'rgba(255,255,255,0.05)' }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            {canScrollLeft && (
+              <button
+                onClick={(e) => { e.stopPropagation(); scrollByAmount(-1); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full flex items-center justify-center text-white/30 hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.05)' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            {canScrollRight && (
+              <button
+                onClick={(e) => { e.stopPropagation(); scrollByAmount(1); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full flex items-center justify-center text-white/30 hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.05)' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
           </>
         )}
 
-        {/* Scrollable cards — passive scroll, rAF throttled */}
+        {/* Pure native horizontal scroll — no JS interference */}
         <div
           ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex items-center gap-3.5 px-[6%] overflow-x-auto scrollbar-hide h-full"
+          onScroll={checkScrollPos}
+          className="flex items-center gap-3.5 px-4 overflow-x-auto scrollbar-hide"
           style={{
-            scrollSnapType: isTouch ? 'none' : 'x mandatory',
+            height: CARD_H + 8,
             WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-x',
           }}
         >
-          {DOUBLE.map((c, i) => {
-            const id = c.id * 1000 + i;
-            const a = active === id;
+          {sizedCards.map((c) => {
+            const a = active === c.id;
             return (
               <VideoCardItem
-                key={id}
+                key={c.id}
                 card={c}
                 panelColor={panel.color1}
                 isActive={a}
                 isTouch={isTouch}
-                onEnter={() => setActive(id)}
+                onEnter={() => setActive(c.id)}
                 onLeave={() => setActive(null)}
-                onClick={() => { const orig = cards.find(x => x.id === c.id); if (orig) onCardClick?.(orig); }}
+                onClick={() => onCardClick?.(c)}
               />
             );
           })}
         </div>
 
         {/* Edge gradients */}
-        <div className="absolute left-0 top-0 bottom-0 w-12 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(15,15,25,0.9), transparent)' }} />
-        <div className="absolute right-0 top-0 bottom-0 w-12 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(15,15,25,0.9), transparent)' }} />
+        <div className="absolute left-0 top-0 bottom-0 w-8 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(20,20,30,0.95), transparent)' }} />
+        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(20,20,30,0.95), transparent)' }} />
       </div>
 
       {/* Footer */}
-      <div className="text-center pb-2.5 pt-1 flex-shrink-0">
-        <span className="text-[11px] tracking-wider uppercase" style={{ color: `${panel.color1}60` }}>
-          {`${cards.length} works · Infinite scroll · Click to preview`}
+      <div className="text-center pb-2.5 pt-1.5 flex-shrink-0">
+        <span className="text-[10px] tracking-wider uppercase" style={{ color: `${panel.color1}60` }}>
+          {`${cards.length} works · 点击预览`}
         </span>
       </div>
     </div>
   );
 }
 
-// === Single Card Poster (with error fallback) ===
+// === Single Card Poster ===
 function SingleCardPoster({ card }: { card: VideoCard & { cardW: number; cardH: number } }) {
   const [imgError, setImgError] = useState(false);
 
@@ -685,9 +629,9 @@ function SingleCardPoster({ card }: { card: VideoCard & { cardW: number; cardH: 
 // === Image Content ===
 function ImageContent({ panel }: { panel: Panel }) {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center px-4 pb-4">
+    <div className="w-full flex flex-col items-center justify-center px-4 pb-3 py-2">
       <div
-        className="relative rounded-xl overflow-hidden max-w-full max-h-full"
+        className="relative rounded-xl overflow-hidden max-w-full"
         style={{
           border: `1px solid ${panel.color1}30`,
           boxShadow: `0 0 60px ${panel.color1}10`,
@@ -697,7 +641,7 @@ function ImageContent({ panel }: { panel: Panel }) {
           <img
             src={panel.imageSrc}
             className="object-contain max-w-full"
-            style={{ maxHeight: 'calc(100% - 40px)', maxWidth: '85vw', transform: 'translateZ(0)' }}
+            style={{ maxHeight: '38vh', maxWidth: '78vw', transform: 'translateZ(0)' }}
             alt={panel.imageTitle || panel.label}
             loading="eager"
             referrerPolicy="no-referrer"
@@ -706,24 +650,24 @@ function ImageContent({ panel }: { panel: Panel }) {
           <div
             className="flex flex-col items-center justify-center p-8"
             style={{
-              width: 'min(400px, 80vw)',
-              height: 'min(300px, 50vh)',
+              width: 'min(300px, 75vw)',
+              height: 'min(220px, 35vh)',
               background: `linear-gradient(135deg, ${panel.color1}12, ${panel.color2}06)`,
             }}
           >
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
               style={{ background: `${panel.color1}15`, border: `1px solid ${panel.color1}25` }}
             >
-              <PanelIcon type="image" className="w-8 h-8 text-white/25" />
+              <PanelIcon type="image" className="w-7 h-7 text-white/25" />
             </div>
             <p className="text-white/40 text-sm font-medium">{panel.imageTitle || panel.label}</p>
             <p className="text-white/20 text-xs mt-1.5 tracking-wider">图片待上传</p>
           </div>
         )}
       </div>
-      <span className="text-[11px] tracking-wider uppercase mt-3" style={{ color: `${panel.color1}60` }}>
-        {(panel.imageTitle || panel.label) + ' · Click to view'}
+      <span className="text-[10px] tracking-wider uppercase mt-2.5" style={{ color: `${panel.color1}60` }}>
+        {(panel.imageTitle || panel.label) + ' · 点击查看'}
       </span>
     </div>
   );
