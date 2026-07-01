@@ -55,7 +55,7 @@ export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoV
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center"
+            className="fixed inset-0 z-[200] flex items-center justify-center"
             style={{
               background: 'rgba(0,0,0,0.96)',
               willChange: 'opacity',
@@ -65,7 +65,7 @@ export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoV
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 md:top-6 md:right-6 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 group"
+              className="absolute top-4 right-4 md:top-6 md:right-6 z-[210] w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 group"
               style={{
                 background: 'rgba(255,255,255,0.1)',
                 border: '1.5px solid rgba(255,255,255,0.3)',
@@ -108,7 +108,7 @@ export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoV
                       muted
                       playsInline
                       loop
-                      preload="metadata"
+                      preload="auto"
                     />
                   ) : videoSrc ? (
                     <div className="w-full h-full flex items-center justify-center">

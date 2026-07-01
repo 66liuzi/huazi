@@ -365,7 +365,14 @@ function ExpandedContent({
         {panel.type === 'image' ? (
           <ImageContent panel={panel} />
         ) : (
-          <VideoGallery panel={panel} onCardClick={onVideoClick} isTouch={isTouch} />
+          <VideoGallery
+            panel={panel}
+            onCardClick={(card) => {
+              onClose();
+              onVideoClick?.(card);
+            }}
+            isTouch={isTouch}
+          />
         )}
       </div>
     </div>
@@ -415,11 +422,12 @@ const VideoCardItem = ({
           className="absolute inset-0 w-full h-full object-cover"
           alt={card.title}
           loading="eager"
+          referrerPolicy="no-referrer"
           onError={() => setImgError(true)}
-          style={{ zIndex: 0 }}
+          style={{ transform: 'translateZ(0)' }}
         />
       ) : (
-        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${card.gradient}, #0a0a0f)`, zIndex: 0 }} />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${card.gradient}, #0a0a0f)` }} />
       )}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-2.5" style={{ zIndex: 2 }}>
         <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center mb-2">
@@ -666,12 +674,13 @@ function SingleCardPoster({ card }: { card: VideoCard & { cardW: number; cardH: 
         className="absolute inset-0 w-full h-full object-cover"
         alt={card.title}
         loading="eager"
+        referrerPolicy="no-referrer"
         onError={() => setImgError(true)}
-        style={{ zIndex: 0 }}
+        style={{ transform: 'translateZ(0)' }}
       />
     );
   }
-  return <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${card.gradient}, #0a0a0f)`, zIndex: 0 }} />;
+  return <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${card.gradient}, #0a0a0f)` }} />;
 }
 
 // === Image Content ===
@@ -689,9 +698,10 @@ function ImageContent({ panel }: { panel: Panel }) {
           <img
             src={panel.imageSrc}
             className="object-contain max-w-full"
-            style={{ maxHeight: 'calc(100% - 40px)', maxWidth: '85vw' }}
+            style={{ maxHeight: 'calc(100% - 40px)', maxWidth: '85vw', transform: 'translateZ(0)' }}
             alt={panel.imageTitle || panel.label}
             loading="eager"
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div
