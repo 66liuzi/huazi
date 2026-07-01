@@ -105,8 +105,10 @@ export default function VideoViewer({ isOpen, onClose, videoSrc, title }: VideoV
                       className="w-full h-full object-cover"
                       controls
                       autoPlay
+                      muted
                       playsInline
                       loop
+                      preload="metadata"
                     />
                   ) : videoSrc ? (
                     <div className="w-full h-full flex items-center justify-center">

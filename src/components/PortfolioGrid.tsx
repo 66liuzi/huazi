@@ -111,7 +111,6 @@ export default function PortfolioGrid({ panels, onVideoClick }: Props) {
   return (
     <div
       className="relative w-full"
-      style={{ contain: 'layout style' }}
     >
       {/* === Collapsed Grid — NEVER reflows === */}
       <div
@@ -376,7 +375,6 @@ function ExpandedContent({
 // === Video Card (individual, memoized for performance) ===
 const VideoCardItem = ({
   card,
-  index,
   panelColor,
   isActive,
   isTouch,
@@ -385,7 +383,6 @@ const VideoCardItem = ({
   onClick,
 }: {
   card: VideoCard & { cardW: number; cardH: number };
-  index: number;
   panelColor: string;
   isActive: boolean;
   isTouch: boolean;
@@ -394,8 +391,6 @@ const VideoCardItem = ({
   onClick: () => void;
 }) => {
   const [imgError, setImgError] = useState(false);
-  // First 8 cards load eagerly (visible area), rest lazy
-  const loadingMode = index < 8 ? 'eager' : 'lazy';
 
   return (
     <div
@@ -412,8 +407,6 @@ const VideoCardItem = ({
         opacity: isActive || !isTouch ? 1 : 0.85,
         position: 'relative',
         transition: 'border-color 0.15s, opacity 0.15s',
-        contentVisibility: 'auto',
-        containIntrinsicSize: `${card.cardW}px ${card.cardH}px`,
       }}
     >
       {card.poster && !imgError ? (
@@ -421,7 +414,7 @@ const VideoCardItem = ({
           src={card.poster}
           className="absolute inset-0 w-full h-full object-cover"
           alt={card.title}
-          loading={loadingMode}
+          loading="eager"
           onError={() => setImgError(true)}
           style={{ zIndex: 0 }}
         />
@@ -594,7 +587,7 @@ function VideoGallery({
   // Multiple cards — scrolling gallery
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="relative flex-1 min-h-0" style={{ contain: 'layout style' }}>
+      <div className="relative flex-1 min-h-0">
         {/* Nav buttons — desktop only */}
         {!isTouch && (
           <>
@@ -627,8 +620,6 @@ function VideoGallery({
           style={{
             scrollSnapType: isTouch ? 'none' : 'x mandatory',
             WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-x',
-            overscrollBehaviorX: 'none',
           }}
         >
           {DOUBLE.map((c, i) => {
@@ -638,7 +629,6 @@ function VideoGallery({
               <VideoCardItem
                 key={id}
                 card={c}
-                index={i}
                 panelColor={panel.color1}
                 isActive={a}
                 isTouch={isTouch}
